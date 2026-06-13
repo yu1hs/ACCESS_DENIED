@@ -23,12 +23,20 @@
             border-bottom: 1px solid #333;
             padding-bottom: 15px;
             margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
         }
 
         .fav-header h2 {
             color: #ffd966;
             font-size: 20px;
             letter-spacing: 2px;
+        }
+
+        .fav-stats {
+            font-size: 11px;
+            color: #ffd966;
         }
 
         .fav-section {
@@ -84,8 +92,38 @@
         .click-count {
             margin-top: 10px;
             font-size: 10px;
-            color: #555;
+            color: #ffd966;
             text-align: right;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            background: #ffd966;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
         }
 
         .footer-note {
@@ -101,6 +139,7 @@
 <body>
     <div class="fav-header">
         <h2>⭐ FAVORITES</h2>
+        <div class="fav-stats" id="favStats">点击次数: 0</div>
     </div>
 
     <div class="fav-section">
@@ -116,6 +155,13 @@
     <div class="fav-section">
         <h3>📷 PHOTOS</h3>
         <div id="photosGrid" class="fav-grid"></div>
+    </div>
+
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <div id="progressText" class="progress-text"></div>
     </div>
 
     <div class="footer-note">
@@ -142,28 +188,34 @@
             ]
         };
 
+        let totalClicks = 0;
+        const targetClicks = 8;  // 结局需要的点击次数
+
         // 加载点击统计
         function loadClickCounts() {
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             if (saved) {
                 const userData = JSON.parse(saved);
-                return userData.favClicks || {};
+                totalClicks = userData.favClickCount || 0;
+                updateStatsDisplay();
+                updateProgress();
             }
-            return {};
         }
 
-        function saveClickCount(category, index) {
-            const saved = localStorage.getItem('hee_archive_user');
+        function saveClickCount() {
+            totalClicks++;
+            const saved = localStorage.getItem('hee_archive_v3');
             let userData = saved ? JSON.parse(saved) : {};
-            if (!userData.favClicks) userData.favClicks = {};
-            const key = `${category}_${index}`;
-            userData.favClicks[key] = (userData.favClicks[key] || 0) + 1;
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            userData.favClickCount = totalClicks;
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
             
-            // 记录对话
-            if (!userData.conversations) userData.conversations = [];
-            userData.conversations.push({ type: 'fav_click', category, index, time: Date.now() });
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            updateStatsDisplay();
+            updateProgress();
+            
+            // 通知父窗口（触发结局检查）
+            if (window.parent && window.parent.increaseFavClick) {
+                window.parent.increaseFavClick();
+            }
             
             // 触发聊天
             setTimeout(() => {
@@ -174,25 +226,49 @@
             }, 300);
         }
 
+        function updateStatsDisplay() {
+            const statsEl = document.getElementById('favStats');
+            if (statsEl) {
+                statsEl.textContent = `🎧 点击次数: ${totalClicks}`;
+                if (totalClicks >= targetClicks) {
+                    statsEl.style.color = '#ffd966';
+                    statsEl.innerHTML = `🎧 点击次数: ${totalClicks} ✨ 已达到共鸣条件 ✨`;
+                }
+            }
+        }
+
+        function updateProgress() {
+            const percent = Math.min(100, (totalClicks / targetClicks) * 100);
+            const fill = document.getElementById('progressFill');
+            const text = document.getElementById('progressText');
+            if (fill) fill.style.width = percent + '%';
+            if (text) {
+                if (totalClicks >= targetClicks) {
+                    text.innerHTML = '✨ 已达到「共鸣」结局条件 ✨';
+                    text.style.color = '#ffd966';
+                } else {
+                    text.innerHTML = `共鸣进度: ${totalClicks}/${targetClicks} 次点击 · 继续探索羲承的喜好`;
+                    text.style.color = '#888';
+                }
+            }
+        }
+
         function renderGrid(category, items, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
             
             container.innerHTML = '';
-            const clickCounts = loadClickCounts();
             
             items.forEach((item, index) => {
-                const key = `${category}_${index}`;
-                const clicks = clickCounts[key] || 0;
-                
                 const card = document.createElement('div');
                 card.className = 'fav-card';
                 card.onclick = () => {
-                    saveClickCount(category, index);
-                    // 可选：显示提示
+                    saveClickCount();
+                    
+                    // 显示提示
                     const note = document.createElement('div');
-                    note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px16px;border-radius:8px;font-size:12px;z-index:1000;';
-                    note.textContent = '⭐ 已收藏到记忆';
+                    note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+                    note.textContent = '⭐ 已收藏到记忆 · 羲承会记住';
                     document.body.appendChild(note);
                     setTimeout(() => note.remove(), 1500);
                 };
@@ -201,7 +277,7 @@
                     <div class="fav-emoji">${item.emoji}</div>
                     <div class="fav-title">${item.title}</div>
                     <div class="fav-note">${item.note.replace(/\n/g, '<br>')}</div>
-                    ${clicks > 0 ? `<div class="click-count">🎧 听过 ${clicks} 次</div>` : ''}
+                    <div class="click-count">🎵</div>
                 `;
                 
                 container.appendChild(card);
@@ -212,6 +288,8 @@
         renderGrid('songs', favoritesData.songs, 'songsGrid');
         renderGrid('movies', favoritesData.movies, 'moviesGrid');
         renderGrid('photos', favoritesData.photos, 'photosGrid');
+        
+        loadClickCounts();
     </script>
 </body>
 </html>
