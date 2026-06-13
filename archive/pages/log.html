@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Courier New', monospace;
+            color: #ccc;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .log-header {
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .log-header h2 {
+            color: #ffd966;
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .log-header .note {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .log-entries {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-entry {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 12px;
+        }
+
+        .log-date {
+            width: 100px;
+            color: #ffd966;
+            font-family: monospace;
+        }
+
+        .log-content {
+            flex: 1;
+            color: #aaa;
+            line-height: 1.5;
+        }
+
+        .continue-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .continue-btn {
+            background: #2a2a2a;
+            border: 1px solid #4a4a4a;
+            color: #ddd;
+            padding: 10px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+
+        .continue-btn:hover {
+            background: #3a6ea5;
+            border-color: #5a8aba;
+        }
+
+        .response-msg {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #ffd966;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="log-header">
+        <h2>📋 LOG</h2>
+        <div class="note">生活碎片 · 按日期排序</div>
+    </div>
+
+    <div id="logEntries" class="log-entries"></div>
+
+    <div class="continue-section">
+        <div>... 还有一些没写。</div>
+        <div style="font-size:12px;color:#666;margin-top:5px;">写了也不会有人看。</div>
+        <div style="font-size:12px;color:#666;">但你还是看到了。</div>
+        <button id="continueBtn" class="continue-btn">📝 继续写吗</button>
+        <div id="responseMsg" class="response-msg"></div>
+    </div>
+
+    <script>
+        const logData = [
+            { date: "2024-03-11", content: "下雨。没出门。" },
+            { date: "2024-03-15", content: "买了冰美式。太冰了。" },
+            { date: "2024-04-02", content: "练习结束。累。" },
+            { date: "2024-04-18", content: "今天有人说了「辛苦了」。没什么特别的意思。但听了还是有点…" },
+            { date: "2024-05-07", content: "梦到以前的事。醒来忘了。" },
+            { date: "2024-06-21", content: "夏至。白天很长。但待在室内没感觉。" },
+            { date: "2024-07-30", content: "热。" },
+            { date: "2024-08-14", content: "凌晨四点还没睡。看了以前的照片。不知道那时候在想什么。" },
+            { date: "2024-09-02", content: "买了新耳机。音质还行。但旧的那副其实还没坏。" },
+            { date: "2024-10-11", content: "风很大。树叶掉了很多。" },
+            { date: "2024-11-23", content: "今天想联系一个人。想了很久。没联系。" },
+            { date: "2024-12-31", content: "一年结束了。没什么特别的感想。明年再说。" }
+        ];
+
+        let userContinued = false;
+
+        function loadUserChoice() {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (saved) {
+                const userData = JSON.parse(saved);
+                if (userData.logContinued) {
+                    userContinued = true;
+                    document.getElementById('responseMsg').innerHTML = '✨ 已记录。谢谢你。';
+                    document.getElementById('responseMsg').style.display = 'block';
+                    document.getElementById('continueBtn').disabled = true;
+                    document.getElementById('continueBtn').style.opacity = '0.5';
+                }
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logEntries');
+            container.innerHTML = '';
+            
+            logData.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                div.innerHTML = `
+                    <div class="log-date">${entry.date}</div>
+                    <div class="log-content">${entry.content}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function continueWriting() {
+            if (userContinued) return;
+            
+            userContinued = true;
+            
+            const saved = localStorage.getItem('hee_archive_user');
+            let userData = saved ? JSON.parse(saved) : {};
+            userData.logContinued = true;
+            userData.logContinuedDate = new Date().toISOString();
+            
+            // 添加一条新日志
+            const today = new Date().toISOString().slice(0, 10);
+            if (!userData.customLogs) userData.customLogs = [];
+            userData.customLogs.push({
+                date: today,
+                content: "有人选了「继续写」。"
+            });
+            
+            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            
+            document.getElementById('responseMsg').innerHTML = '✨ 已记录。谢谢你。';
+            document.getElementById('responseMsg').style.display = 'block';
+            document.getElementById('continueBtn').disabled = true;
+            document.getElementById('continueBtn').style.opacity = '0.5';
+            
+            // 记录对话
+            if (!userData.conversations) userData.conversations = [];
+            userData.conversations.push({ type: 'log_continue', time: Date.now() });
+            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+        }
+
+        document.getElementById('continueBtn').addEventListener('click', continueWriting);
+        
+        renderLogs();
+        loadUserChoice();
+    </script>
+</body>
+</html>
