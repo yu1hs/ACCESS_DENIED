@@ -1,6 +1,6 @@
 // ==========================================
-// HEE_ARCHIVE v9.0 - 逻辑连贯对话 + 倾向值面板
-// 三条独立故事线：月光线 / 读者线 / 共鸣线
+// HEE_ARCHIVE v10.0 - 完整修复版
+// 每天正确推进 + 三条独立故事线
 // ==========================================
 
 let currentUser = {
@@ -12,14 +12,14 @@ let currentUser = {
     chatHistory: [],
     endings: [],
     familiarity: 0,
-    day: 1,
+    day: 1,                    // 从第1天开始
     messagesToday: 0,
     maxMessages: 6,
     dayGreetingSent: false,
     viewedPages: [],
     selectedOptions: [],
     tendency: { night: 0, listen: 0, music: 0 },
-    activeStoryline: null,  // 'night', 'listen', 'music'
+    activeStoryline: null,
     storylineProgress: { night: 0, listen: 0, music: 0 },
     gameEnded: false,
     trueEndingUnlocked: false
@@ -53,6 +53,7 @@ const SFX = {
 };
 
 // ========== 三条独立故事线 ==========
+
 // 月光线（夜晚/失眠主题）
 const moonlightStory = {
     1: { greeting: "……你怎么进来的。", options: [
@@ -172,9 +173,9 @@ const resonanceStory = {
 
 // 获取当前故事线
 function getCurrentStory() {
-    const night = currentUser.tendency.night;
-    const listen = currentUser.tendency.listen;
-    const music = currentUser.tendency.music;
+    const night = currentUser.tendency.night || 0;
+    const listen = currentUser.tendency.listen || 0;
+    const music = currentUser.tendency.music || 0;
     
     if (night > listen && night > music) return 'night';
     if (music > night && music > listen) return 'music';
@@ -266,14 +267,6 @@ function updateTendencyPanel() {
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
     SFX.init();
-    
-    // 检查是否需要重置（每次打开全新）
-    const urlParams = new URLSearchParams(window.location.search);
-    const resetParam = urlParams.get('reset');
-    if (resetParam !== 'false') {
-        localStorage.removeItem('hee_archive_v9');
-    }
-    
     loadUserData();
     
     if (currentUser.gameEnded) {
@@ -289,8 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
     createTendencyPanel();
     updateTendencyPanel();
 
-    console.log('%c🦌 HEE v9.0 · 逻辑连贯对话', 'color: #ffd966; font-size: 14px;');
-    console.log('%c三条独立故事线 · 实时倾向值面板', 'color: #888; font-size: 11px;');
+    console.log('%c🦌 HEE v10.0 · 完整修复版', 'color: #ffd966; font-size: 14px;');
+    console.log(`%c当前第 ${currentUser.day} 天`, 'color: #ffd966; font-size: 12px;');
 
     setTimeout(() => {
         showChatWindow();
@@ -317,27 +310,14 @@ function determineEnding() {
 
 function triggerEnding(endingType) {
     if (currentUser.endings.includes(endingType)) {
-        // 如果已经获得过这个结局，直接返回桌面
         window.location.href = '../index.html';
         return;
     }
     
     const endings = {
-        moonlight: { 
-            title: '🌙 月光', 
-            message: '你在深夜找到了他。那些失眠的夜晚，不再孤单。\n\n你们在同一个月亮下面。',
-            dialog: '你每次都这么晚。\n\n凌晨的时候，想法会比较真实。\n谢谢你在这些时间里来这边。'
-        },
-        reader: { 
-            title: '📖 读者', 
-            message: '你认真听完了每一句话。他被理解了。\n\n那些没说出口的话，你都听到了。',
-            dialog: '你认真听了。\n\n很少有人会这样。\n谢谢你不是谢谢你来这里。是谢谢你认真听了。'
-        },
-        resonance: { 
-            title: '🎵 共鸣', 
-            message: '你们喜欢同样的东西。那些音乐连接了你们。\n\n他不再是一个人了。',
-            dialog: '我们喜欢的东西一样。\n\n如果是你，好像也没关系。'
-        }
+        moonlight: { title: '🌙 月光', message: '你在深夜找到了他。那些失眠的夜晚，不再孤单。\n\n你们在同一个月亮下面。', dialog: '你每次都这么晚。\n\n凌晨的时候，想法会比较真实。\n谢谢你在这些时间里来这边。' },
+        reader: { title: '📖 读者', message: '你认真听完了每一句话。他被理解了。\n\n那些没说出口的话，你都听到了。', dialog: '你认真听了。\n\n很少有人会这样。\n谢谢你不是谢谢你来这里。是谢谢你认真听了。' },
+        resonance: { title: '🎵 共鸣', message: '你们喜欢同样的东西。那些音乐连接了你们。\n\n他不再是一个人了。', dialog: '我们喜欢的东西一样。\n\n如果是你，好像也没关系。' }
     };
     
     const ending = endings[endingType];
@@ -345,7 +325,6 @@ function triggerEnding(endingType) {
     saveUserData();
     SFX.ending();
     
-    // 检查是否集齐3个结局
     if (currentUser.endings.length >= 3 && !currentUser.trueEndingUnlocked) {
         triggerTraceEnding();
         return;
@@ -407,7 +386,7 @@ function showEndingScreen(type, title, message, dialog) {
 
 function restartGame() {
     if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
-        localStorage.removeItem('hee_archive_v9');
+        localStorage.removeItem('hee_archive_v10');
         localStorage.removeItem('trace_ending_triggered');
         localStorage.removeItem('secret_ending_triggered');
         window.location.href = '../index.html?reset=true';
@@ -416,7 +395,7 @@ function restartGame() {
 
 // ========== 存储函数 ==========
 function loadUserData() {
-    const saved = localStorage.getItem('hee_archive_v9');
+    const saved = localStorage.getItem('hee_archive_v10');
     if (saved) {
         try { 
             const loaded = JSON.parse(saved);
@@ -450,7 +429,7 @@ function resetUser() {
 
 function saveUserData() {
     currentUser.lastLogin = new Date().toISOString();
-    try { localStorage.setItem('hee_archive_v9', JSON.stringify(currentUser)); } catch(e) {}
+    try { localStorage.setItem('hee_archive_v10', JSON.stringify(currentUser)); } catch(e) {}
 }
 
 function startAutoSave() { setInterval(saveUserData, 30000); }
@@ -501,12 +480,12 @@ function shutdownAndAdvance() {
         currentUser.dayGreetingSent = false;
         
         // 解锁页面
-        if (currentUser.day === 2) currentUser.unlockedPages.push('trash');
-        if (currentUser.day === 3) currentUser.unlockedPages.push('profile');
-        if (currentUser.day === 4) currentUser.unlockedPages.push('photo');
-        if (currentUser.day === 5) currentUser.unlockedPages.push('audio');
-        if (currentUser.day === 6) currentUser.unlockedPages.push('log');
-        if (currentUser.day === 7) currentUser.unlockedPages.push('favorites');
+        if (currentUser.day === 2 && !currentUser.unlockedPages.includes('trash')) currentUser.unlockedPages.push('trash');
+        if (currentUser.day === 3 && !currentUser.unlockedPages.includes('profile')) currentUser.unlockedPages.push('profile');
+        if (currentUser.day === 4 && !currentUser.unlockedPages.includes('photo')) currentUser.unlockedPages.push('photo');
+        if (currentUser.day === 5 && !currentUser.unlockedPages.includes('audio')) currentUser.unlockedPages.push('audio');
+        if (currentUser.day === 6 && !currentUser.unlockedPages.includes('log')) currentUser.unlockedPages.push('log');
+        if (currentUser.day === 7 && !currentUser.unlockedPages.includes('favorites')) currentUser.unlockedPages.push('favorites');
         
         saveUserData();
         SFX.boot();
@@ -563,7 +542,6 @@ function showDailyOptions(options) {
         return;
     }
     
-    // 过滤掉已选过的选项（基于文本内容）
     const available = options.filter(opt => 
         !currentUser.selectedOptions.includes(opt.text)
     );
@@ -574,7 +552,6 @@ function showDailyOptions(options) {
         return;
     }
     
-    // 显示所有可用选项
     const optionsList = available.map(opt => ({
         text: opt.text,
         action: () => {
@@ -583,10 +560,8 @@ function showDailyOptions(options) {
             SFX.click();
             showChatMessage('user', opt.text);
             
-            // 记录已选选项
             currentUser.selectedOptions.push(opt.text);
             
-            // 增加倾向值
             if (opt.night) currentUser.tendency.night = (currentUser.tendency.night || 0) + opt.night;
             if (opt.listen) currentUser.tendency.listen = (currentUser.tendency.listen || 0) + opt.listen;
             if (opt.music) currentUser.tendency.music = (currentUser.tendency.music || 0) + opt.music;
@@ -600,7 +575,6 @@ function showDailyOptions(options) {
                 currentUser.conversations.push({ text: opt.text, day: currentUser.day, time: Date.now() });
                 saveUserData();
                 
-                // 继续显示剩余选项
                 const remainingOptions = available.filter(o => o.text !== opt.text);
                 if (remainingOptions.length > 0 && canTalk()) {
                     setTimeout(() => showDailyOptions(remainingOptions), 800);
@@ -820,5 +794,4 @@ window.saveProfileAnswer = function(answer) {
     saveUserData();
 };
 
-console.log('%c🦌 HEE v9.0 已加载', 'color: #ffd966; font-size: 12px;');
-console.log('%c倾向值面板显示在右上角', 'color: #888; font-size: 10px;');
+console.log('%c🦌 HEE v10.0 已加载，从第1天开始', 'color: #ffd966; font-size: 12px;');
