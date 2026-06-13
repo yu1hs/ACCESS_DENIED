@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOME - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #ccc;
+            padding: 40px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .home-container {
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .welcome-message {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #aaa;
+            border-left: 3px solid #ffd966;
+            padding-left: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .ascii-art {
+            font-family: monospace;
+            font-size: 10px;
+            color: #3a6ea5;
+            margin: 30px 0;
+            white-space: pre;
+            line-height: 1.2;
+        }
+
+        .stats {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .stats h4 {
+            color: #ffd966;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .stat-label {
+            color: #777;
+        }
+
+        .stat-value {
+            color: #ddd;
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            font-size: 11px;
+            color: #555;
+            font-style: italic;
+        }
+
+        .dynamic-message {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 217, 102, 0.05);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #ffd966;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #2a2a2a;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="home-container" id="homeContainer">
+        <div class="ascii-art">
+            ┌─────────────────────────────────────┐
+            │                                     │
+            │     H E E _ A R C H I V E           │
+            │                                     │
+            │     「你找到的不是一个人的秘密      │
+            │       而是一个人愿意留下来的痕迹」   │
+            │                                     │
+            └─────────────────────────────────────┘
+        </div>
+
+        <div class="welcome-message" id="welcomeMessage">
+            Welcome to HEE_ARCHIVE.
+            <br><br>
+            这个网站曾经有主人。
+            <br>
+            现在没有了。
+            <br><br>
+            如果你想找什么，请自便。
+            <br>
+            但大部分东西不在。
+            <br><br>
+            —— 系统自动生成
+        </div>
+
+        <div id="dynamicMessage" class="dynamic-message"></div>
+
+        <div class="stats" id="statsPanel">
+            <h4>📊 访问记录</h4>
+            <div class="stat-row">
+                <span class="stat-label">首次访问</span>
+                <span class="stat-value" id="firstVisit">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">总访问次数</span>
+                <span class="stat-value" id="visitCount">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">解锁页面数</span>
+                <span class="stat-value" id="unlockedCount">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">对话次数</span>
+                <span class="stat-value" id="chatCount">--</span>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <span id="randomQuote"></span>
+        </div>
+    </div>
+
+    <script>
+        // 获取用户数据（从 localStorage 读取）
+        let userData = {
+            visitCount: 1,
+            firstVisit: new Date().toISOString(),
+            unlockedPages: [],
+            conversations: []
+        };
+
+        function loadUserData() {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (saved) {
+                userData = JSON.parse(saved);
+            } else {
+                userData = {
+                    visitCount: 1,
+                    firstVisit: new Date().toISOString(),
+                    unlockedPages: [],
+                    conversations: []
+                };
+                localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            }
+            
+            updateStats();
+            updateDynamicMessage();
+            setRandomQuote();
+        }
+
+        function updateStats() {
+            document.getElementById('firstVisit').textContent = userData.firstVisit ? 
+                new Date(userData.firstVisit).toLocaleDateString() : '今天';
+            document.getElementById('visitCount').textContent = userData.visitCount || 1;
+            document.getElementById('unlockedCount').textContent = (userData.unlockedPages?.length || 0) + '/7';
+            document.getElementById('chatCount').textContent = userData.conversations?.filter(c => c.type === 'chat').length || 0;
+        }
+
+        function updateDynamicMessage() {
+            const msgDiv = document.getElementById('dynamicMessage');
+            const visitCount = userData.visitCount || 1;
+            
+            if (visitCount === 1) {
+                msgDiv.innerHTML = '✨ 欢迎第一次来访。这里没什么特别的，但...谢谢你来。';
+            } else if (visitCount === 2) {
+                msgDiv.innerHTML = '🔄 你回来了。我以为你不会再来。';
+            } else if (visitCount === 3) {
+                msgDiv.innerHTML = '🤔 第三次了。你在找什么吗？';
+            } else if (visitCount >= 4 && visitCount <= 10) {
+                const messages = [
+                    '🌙 每次你来的时候，我都在想同一个问题。',
+                    '📝 这里的每个页面都是某一天的我。',
+                    '💭 你看到的这些都是没来得及删掉的。',
+                    '🎧 今天听了什么歌？',
+                    '☕ 喝咖啡了吗。'
+                ];
+                msgDiv.innerHTML = `💬 "${messages[visitCount % messages.length]}"`;
+            } else {
+                msgDiv.innerHTML = '🦌 你已经来了很多次了。谢谢你。';
+            }
+        }
+
+        function setRandomQuote() {
+            const quotes = [
+                "「不用记得我。但如果你想，也可以。」",
+                "「凌晨的时候，想法会比较真实。」",
+                "「有些话没说完，是因为说到一半就不想说了。」",
+                "「这个网站不会关。至少我不会主动关。」",
+                "「你每次点开这个页面的时候，在想什么。」"
+            ];
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            document.getElementById('randomQuote').textContent = quotes[randomIndex];
+        }
+
+        // 监听 localStorage 变化（当其他页面更新数据时）
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'hee_archive_user') {
+                userData = JSON.parse(e.newValue);
+                updateStats();
+                updateDynamicMessage();
+            }
+        });
+
+        // 手动刷新数据（每5秒检查一次）
+        setInterval(() => {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (saved) {
+                const newData = JSON.parse(saved);
+                if (JSON.stringify(newData) !== JSON.stringify(userData)) {
+                    userData = newData;
+                    updateStats();
+                    updateDynamicMessage();
+                }
+            }
+        }, 5000);
+
+        loadUserData();
+    </script>
+</body>
+</html>
