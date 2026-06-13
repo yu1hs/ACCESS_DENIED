@@ -23,12 +23,20 @@
             border-bottom: 1px solid #333;
             padding-bottom: 15px;
             margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
         }
 
         .audio-header h2 {
             color: #ffd966;
             font-size: 20px;
             letter-spacing: 2px;
+        }
+
+        .audio-stats {
+            font-size: 11px;
+            color: #ffd966;
         }
 
         .audio-list {
@@ -105,6 +113,7 @@
             font-size: 11px;
             color: #888;
             font-style: italic;
+            margin-top: 4px;
         }
 
         .transcript {
@@ -121,12 +130,42 @@
             display: block;
         }
 
+        .progress-section {
+            margin-top: 30px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            background: #ffd966;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+
         .footer-note {
             margin-top: 30px;
             text-align: center;
             font-size: 11px;
             color: #555;
-            padding: 16px;
+            padding-top: 20px;
             border-top: 1px solid #222;
         }
     </style>
@@ -134,16 +173,25 @@
 <body>
     <div class="audio-header">
         <h2>🎧 AUDIO ARCHIVE</h2>
+        <div class="audio-stats" id="audioStats">已播放: 0 次</div>
     </div>
 
     <div id="audioList" class="audio-list"></div>
 
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <div id="progressText" class="progress-text"></div>
+    </div>
+
     <div class="footer-note">
-        💡 点击播放 · 录音时没想到有人会听，所以不完整
+        💡 点击播放 · 录音时没想到有人会听，所以不完整<br>
+        📝 可以查看转录文字了解内容
     </div>
 
     <script>
-        // 音频数据（模拟，实际可替换为真实音频文件）
+        // 音频数据
         const audioFiles = [
             {
                 id: 1,
@@ -182,26 +230,82 @@
             }
         ];
 
+        let playCount = 0;
         let currentlyPlaying = null;
         let currentAudio = null;
+        const targetPlays = 2;  // 读者结局需要的播放次数
+
+        // 加载播放统计
+        function loadPlayCount() {
+            const saved = localStorage.getItem('hee_archive_v3');
+            if (saved) {
+                const userData = JSON.parse(saved);
+                playCount = userData.audioPlayCount || 0;
+                updateStatsDisplay();
+                updateProgress();
+            }
+        }
+
+        function savePlayCount() {
+            const saved = localStorage.getItem('hee_archive_v3');
+            let userData = saved ? JSON.parse(saved) : {};
+            userData.audioPlayCount = playCount;
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            
+            // 通知父窗口（触发结局检查）
+            if (window.parent && window.parent.playAudio) {
+                window.parent.playAudio();
+            }
+        }
+
+        function updateStatsDisplay() {
+            const statsEl = document.getElementById('audioStats');
+            if (statsEl) {
+                statsEl.textContent = `🎧 已播放: ${playCount} 次`;
+                if (playCount >= targetPlays) {
+                    statsEl.style.color = '#ffd966';
+                    statsEl.innerHTML = `🎧 已播放: ${playCount} 次 ✨ 已达到条件 ✨`;
+                }
+            }
+        }
+
+        function updateProgress() {
+            const percent = Math.min(100, (playCount / targetPlays) * 100);
+            const fill = document.getElementById('progressFill');
+            const text = document.getElementById('progressText');
+            if (fill) fill.style.width = percent + '%';
+            if (text) {
+                if (playCount >= targetPlays) {
+                    text.innerHTML = '✨ 已收听足够音频 · 继续探索其他内容 ✨';
+                    text.style.color = '#ffd966';
+                } else {
+                    text.innerHTML = `读者进度: 收听 ${playCount}/${targetPlays} 段音频 · 听他说的话`;
+                    text.style.color = '#888';
+                }
+            }
+        }
 
         // 创建模拟音频（用 Web Audio API 生成简单音效）
         function createBeepSound(duration, frequency = 440) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = frequency;
-            gainNode.gain.value = 0.1;
-            
-            oscillator.start();
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
-            oscillator.stop(audioContext.currentTime + duration);
-            
-            return audioContext;
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+                oscillator.stop(audioContext.currentTime + duration);
+                
+                return audioContext;
+            } catch(e) {
+                return null;
+            }
         }
 
         function playMockAudio(fileId, playBtn) {
@@ -233,9 +337,23 @@
             playBtn.textContent = '⏸';
             playBtn.classList.add('playing');
             
+            // 增加播放次数
+            playCount++;
+            savePlayCount();
+            updateStatsDisplay();
+            updateProgress();
+            
             // 模拟播放（实际项目中替换为真实音频文件）
             const audioContext = createBeepSound(3, 400 + fileId * 30);
             currentAudio = audioContext;
+            
+            // 显示播放提示
+            const file = audioFiles.find(f => f.id === fileId);
+            const playingMsg = document.createElement('div');
+            playingMsg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+            playingMsg.textContent = `🎵 正在播放: ${file.title}`;
+            document.body.appendChild(playingMsg);
+            setTimeout(() => playingMsg.remove(), 2000);
             
             // 3秒后自动停止
             setTimeout(() => {
@@ -254,8 +372,6 @@
             audioFiles.forEach(file => {
                 const item = document.createElement('div');
                 item.className = 'audio-item';
-
-                const isPlayingClass = currentlyPlaying === file.id ? 'playing' : '';
                 
                 item.innerHTML = `
                     <div class="audio-control" onclick="toggleTranscript(${file.id})">
@@ -265,7 +381,7 @@
                         <div class="audio-info">
                             <div class="audio-title">${file.title}</div>
                             <div class="audio-duration">${file.duration}</div>
-                            <div class="audio-note">${file.note}</div>
+                            <div class="audio-note">💬 ${file.note}</div>
                         </div>
                     </div>
                     <div class="transcript" id="transcript${file.id}">
@@ -287,21 +403,15 @@
 
         function playAudio(fileId, btnElement) {
             playMockAudio(fileId, btnElement);
-            
-            // 记录播放行为
-            const saved = localStorage.getItem('hee_archive_user');
-            if (saved) {
-                let userData = JSON.parse(saved);
-                if (!userData.audioPlays) userData.audioPlays = [];
-                userData.audioPlays.push({ id: fileId, time: Date.now() });
-                localStorage.setItem('hee_archive_user', JSON.stringify(userData));
-            }
         }
 
+        // 暴露全局函数
         window.toggleTranscript = toggleTranscript;
         window.playAudio = playAudio;
 
+        // 初始化
         renderAudioList();
+        loadPlayCount();
     </script>
 </body>
 </html>
