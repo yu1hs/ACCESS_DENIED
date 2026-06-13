@@ -34,15 +34,19 @@
             letter-spacing: 2px;
         }
 
-        .log-header .note {
+        .log-stats {
             font-size: 11px;
-            color: #666;
+            color: #ffd966;
         }
 
         .log-entries {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
         }
 
         .log-entry {
@@ -69,8 +73,13 @@
             padding: 20px;
             background: #0f0f0f;
             border: 1px solid #2a2a2a;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
+        }
+
+        .continue-section p {
+            margin: 5px 0;
+            font-size: 13px;
         }
 
         .continue-btn {
@@ -81,36 +90,96 @@
             border-radius: 20px;
             cursor: pointer;
             font-size: 13px;
-            margin-top: 12px;
+            margin-top: 15px;
+            transition: all 0.2s;
         }
 
         .continue-btn:hover {
             background: #3a6ea5;
             border-color: #5a8aba;
+            color: white;
+        }
+
+        .continue-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .response-msg {
             margin-top: 12px;
-            font-size: 11px;
+            font-size: 12px;
             color: #ffd966;
             display: none;
+        }
+
+        .response-msg.show {
+            display: block;
+        }
+
+        .progress-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            background: #ffd966;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .custom-log {
+            margin-top: 20px;
+            padding: 16px;
+            background: #0a0a0a;
+            border-left: 3px solid #ffd966;
+            font-size: 12px;
+            color: #aaa;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="log-header">
         <h2>📋 LOG</h2>
-        <div class="note">生活碎片 · 按日期排序</div>
+        <div class="log-stats" id="logStats">📖 已阅读全部</div>
     </div>
 
     <div id="logEntries" class="log-entries"></div>
 
     <div class="continue-section">
-        <div>... 还有一些没写。</div>
-        <div style="font-size:12px;color:#666;margin-top:5px;">写了也不会有人看。</div>
-        <div style="font-size:12px;color:#666;">但你还是看到了。</div>
+        <p>... 还有一些没写。</p>
+        <p style="font-size:12px;color:#666;">写了也不会有人看。</p>
+        <p style="font-size:12px;color:#666;">但你还是看到了。</p>
         <button id="continueBtn" class="continue-btn">📝 继续写吗</button>
         <div id="responseMsg" class="response-msg"></div>
+    </div>
+
+    <div id="customLogContainer" class="custom-log" style="display:none;"></div>
+
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <div id="progressText" class="progress-text"></div>
     </div>
 
     <script>
@@ -130,18 +199,81 @@
         ];
 
         let userContinued = false;
+        let hasReadAll = false;
 
         function loadUserChoice() {
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             if (saved) {
                 const userData = JSON.parse(saved);
                 if (userData.logContinued) {
                     userContinued = true;
-                    document.getElementById('responseMsg').innerHTML = '✨ 已记录。谢谢你。';
-                    document.getElementById('responseMsg').style.display = 'block';
-                    document.getElementById('continueBtn').disabled = true;
-                    document.getElementById('continueBtn').style.opacity = '0.5';
+                    document.getElementById('responseMsg').innerHTML = '✨ 已记录。谢谢你。✨';
+                    document.getElementById('responseMsg').classList.add('show');
+                    const btn = document.getElementById('continueBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                    }
+                    // 显示自定义日志
+                    if (userData.customLogs && userData.customLogs.length > 0) {
+                        const container = document.getElementById('customLogContainer');
+                        container.style.display = 'block';
+                        container.innerHTML = `<span style="color:#ffd966;">📝 你留下的痕迹：</span><br><br>`;
+                        userData.customLogs.forEach(log => {
+                            container.innerHTML += `📅 ${log.date}<br>“${log.content}”<br><br>`;
+                        });
+                    }
                 }
+                // 检查是否阅读完所有日志
+                if (userData.viewedLogs !== undefined && userData.viewedLogs >= logData.length) {
+                    hasReadAll = true;
+                }
+            }
+            updateProgress();
+            updateStats();
+        }
+
+        function updateProgress() {
+            const fill = document.getElementById('progressFill');
+            const text = document.getElementById('progressText');
+            if (fill && text) {
+                if (userContinued) {
+                    fill.style.width = '100%';
+                    text.innerHTML = '✨ 已完成 · 你选择了「继续写」 ✨';
+                    text.style.color = '#ffd966';
+                } else {
+                    fill.style.width = '0%';
+                    text.innerHTML = '💭 点击「继续写」 · 给羲承留下你的回应';
+                    text.style.color = '#888';
+                }
+            }
+        }
+
+        function updateStats() {
+            const statsEl = document.getElementById('logStats');
+            if (statsEl) {
+                if (hasReadAll) {
+                    statsEl.innerHTML = '📖 已阅读全部日志 ✨';
+                    statsEl.style.color = '#ffd966';
+                } else {
+                    statsEl.innerHTML = `📖 阅读进度: 滚动浏览全部日志`;
+                    statsEl.style.color = '#888';
+                }
+            }
+        }
+
+        function markLogAsRead() {
+            const saved = localStorage.getItem('hee_archive_v3');
+            let userData = saved ? JSON.parse(saved) : {};
+            if (!userData.viewedLogs) userData.viewedLogs = 0;
+            userData.viewedLogs = logData.length;
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            hasReadAll = true;
+            updateStats();
+            
+            // 通知父窗口
+            if (window.parent && window.parent.markLogRead) {
+                window.parent.markLogRead();
             }
         }
 
@@ -149,14 +281,24 @@
             const container = document.getElementById('logEntries');
             container.innerHTML = '';
             
-            logData.forEach(entry => {
+            logData.forEach((entry, index) => {
                 const div = document.createElement('div');
                 div.className = 'log-entry';
+                div.setAttribute('data-index', index);
                 div.innerHTML = `
                     <div class="log-date">${entry.date}</div>
                     <div class="log-content">${entry.content}</div>
                 `;
                 container.appendChild(div);
+            });
+            
+            // 检测滚动到底部（表示已阅读）
+            container.addEventListener('scroll', function() {
+                if (container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
+                    if (!hasReadAll) {
+                        markLogAsRead();
+                    }
+                }
             });
         }
 
@@ -165,30 +307,62 @@
             
             userContinued = true;
             
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             let userData = saved ? JSON.parse(saved) : {};
             userData.logContinued = true;
             userData.logContinuedDate = new Date().toISOString();
             
             // 添加一条新日志
             const today = new Date().toISOString().slice(0, 10);
+            const customMsg = "有人选了「继续写」。";
             if (!userData.customLogs) userData.customLogs = [];
             userData.customLogs.push({
                 date: today,
-                content: "有人选了「继续写」。"
+                content: customMsg
             });
             
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
             
-            document.getElementById('responseMsg').innerHTML = '✨ 已记录。谢谢你。';
-            document.getElementById('responseMsg').style.display = 'block';
-            document.getElementById('continueBtn').disabled = true;
-            document.getElementById('continueBtn').style.opacity = '0.5';
+            document.getElementById('responseMsg').innerHTML = '✨ 已记录。谢谢你。✨';
+            document.getElementById('responseMsg').classList.add('show');
+            const btn = document.getElementById('continueBtn');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            
+            // 显示自定义日志
+            const container = document.getElementById('customLogContainer');
+            container.style.display = 'block';
+            container.innerHTML = `<span style="color:#ffd966;">📝 你留下的痕迹：</span><br><br>`;
+            userData.customLogs.forEach(log => {
+                container.innerHTML += `📅 ${log.date}<br>“${log.content}”<br><br>`;
+            });
+            
+            updateProgress();
             
             // 记录对话
             if (!userData.conversations) userData.conversations = [];
             userData.conversations.push({ type: 'log_continue', time: Date.now() });
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            
+            // 通知父窗口
+            if (window.parent && window.parent.continueLog) {
+                window.parent.continueLog();
+            }
+            
+            // 显示成功提示
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;color:white;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+            successMsg.textContent = '📝 已记录到日志中';
+            document.body.appendChild(successMsg);
+            setTimeout(() => successMsg.remove(), 2000);
+            
+            // 触发聊天
+            setTimeout(() => {
+                const chatWindow = window.parent.document.getElementById('chatWindow');
+                if (chatWindow && chatWindow.classList.contains('hidden')) {
+                    chatWindow.classList.remove('hidden');
+                }
+            }, 500);
         }
 
         document.getElementById('continueBtn').addEventListener('click', continueWriting);
