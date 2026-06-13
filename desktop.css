@@ -9,9 +9,10 @@ body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    font-family: 'Segoe UI', 'Microsoft YaHei', monospace;
+    font-family: 'Segoe UI', 'Microsoft YaHei', 'Courier New', monospace;
 }
 
+/* 壁纸 */
 .wallpaper {
     position: fixed;
     top: 0;
@@ -22,6 +23,7 @@ body {
     z-index: -1;
 }
 
+/* 桌面图标 */
 .desktop-icons {
     position: absolute;
     top: 20px;
@@ -29,6 +31,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    z-index: 10;
 }
 
 .desktop-icon {
@@ -62,9 +65,9 @@ body {
     padding: 4px 8px;
     border-radius: 14px;
     font-weight: 500;
-    letter-spacing: 0.5px;
 }
 
+/* 任务栏 */
 .taskbar {
     position: fixed;
     bottom: 0;
@@ -123,6 +126,7 @@ body {
     transform: scale(1.05);
 }
 
+/* 右键菜单 */
 .context-menu {
     position: fixed;
     background: #2d2d2d;
@@ -151,6 +155,13 @@ body {
     color: white;
 }
 
+#revealSecret {
+    border-top: 1px solid #444;
+    margin-top: 4px;
+    color: #ffd966;
+}
+
+/* 对话框 */
 .dialog {
     position: fixed;
     top: 0;
@@ -174,7 +185,7 @@ body {
     border: 1px solid #5a5a5a;
     border-radius: 10px;
     padding: 24px;
-    min-width: 300px;
+    min-width: 280px;
     color: #e8e8e8;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
@@ -212,78 +223,20 @@ body {
     justify-content: flex-end;
 }
 
-.dialog-buttons button, .dialog-close {
+.dialog-buttons button,
+.dialog-close {
     padding: 6px 20px;
     background: #3a3a3a;
     border: 1px solid #5a5a5a;
     color: white;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 13px;
 }
 
-.dialog-buttons button:hover, .dialog-close:hover {
+.dialog-buttons button:hover,
+.dialog-close:hover {
     background: #3a6ea5;
     border-color: #5a8aba;
-}
-
-.notification {
-    position: fixed;
-    bottom: 55px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.92);
-    color: #ffd966;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-size: 13px;
-    border-left: 3px solid #ffd966;
-    z-index: 150;
-    animation: slideIn 0.25s ease;
-    font-family: monospace;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    max-width: 280px;
-}
-
-.notification.hidden {
-    display: none;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-.boot-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #0a0a0a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    transition: opacity 1s ease;
-}
-
-.boot-screen.fade-out { opacity: 0; }
-
-.boot-text {
-    color: #2a8a2a;
-    font-family: 'Courier New', monospace;
-    font-size: 18px;
-    line-height: 2;
-    text-shadow: 0 0 5px #2a8a2a;
-}
-
-.boot-done { margin-top: 20px; color: #4ade80; }
-
-@media (max-width: 600px) {
-    .desktop-icon { width: 70px; }
-    .icon-folder { font-size: 42px; }
-    .icon-label { font-size: 10px; }
-    .dialog-content { margin: 20px; min-width: auto; }
 }
 
 #passwordInput {
@@ -298,4 +251,230 @@ body {
 #passwordInput:focus {
     outline: none;
     border-color: #ffd966;
+}
+
+/* 通知 */
+.notification {
+    position: fixed;
+    bottom: 55px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.92);
+    color: #ffd966;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    border-left: 3px solid #ffd966;
+    z-index: 150;
+    animation: slideIn 0.25s ease;
+    font-family: monospace;
+    max-width: 280px;
+}
+
+.notification.hidden {
+    display: none;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 启动画面 */
+.boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 1s ease;
+}
+
+.boot-screen.fade-out {
+    opacity: 0;
+}
+
+.boot-text {
+    color: #2a8a2a;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    line-height: 2;
+    text-shadow: 0 0 5px #2a8a2a;
+}
+
+.boot-done {
+    margin-top: 20px;
+    color: #4ade80;
+}
+
+/* 重新开始按钮 */
+.desktop-restart-btn {
+    position: fixed;
+    bottom: 60px;
+    left: 20px;
+    background: rgba(255, 102, 170, 0.9);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    padding: 8px 18px;
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 12px;
+    font-family: monospace;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s;
+}
+
+.desktop-restart-btn:hover {
+    background: #ff66aa;
+    transform: scale(1.02);
+}
+
+/* 依赖度条 */
+.dependency-bar-container {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    width: 180px;
+    background: rgba(20, 20, 30, 0.95);
+    border-radius: 12px;
+    padding: 8px 12px;
+    z-index: 100;
+    font-family: monospace;
+    font-size: 10px;
+    border: 1px solid #333;
+    backdrop-filter: blur(4px);
+}
+
+.dependency-bar {
+    height: 4px;
+    background: #ff66aa;
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+
+.dependency-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    color: #aaa;
+}
+
+/* 浮动表情动画 */
+.floating-emoji {
+    position: fixed;
+    pointer-events: none;
+    font-size: 28px;
+    animation: floatEmoji 2s ease-out forwards;
+    z-index: 1000;
+}
+
+@keyframes floatEmoji {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px);
+    }
+}
+
+@keyframes stressPulse {
+    0% {
+        box-shadow: inset 0 0 0 rgba(255, 68, 68, 0);
+    }
+    50% {
+        box-shadow: inset 0 0 30px rgba(255, 68, 68, 0.4);
+    }
+    100% {
+        box-shadow: inset 0 0 0 rgba(255, 68, 68, 0);
+    }
+}
+
+.stress-glowing {
+    animation: stressPulse 1s ease-in-out infinite;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+    .desktop-icon {
+        width: 70px;
+    }
+    .icon-folder {
+        font-size: 42px;
+    }
+    .icon-label {
+        font-size: 10px;
+    }
+    .dialog-content {
+        margin: 20px;
+        min-width: auto;
+        width: calc(100% - 40px);
+    }
+    .dependency-bar-container {
+        width: 140px;
+        font-size: 9px;
+        bottom: 50px;
+        right: 10px;
+    }
+    .desktop-restart-btn {
+        bottom: 50px;
+        left: 10px;
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+    .notification {
+        bottom: 100px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        font-size: 11px;
+    }
+    .taskbar {
+        height: 40px;
+        padding: 0 8px;
+    }
+    .taskbar-time {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .desktop-icon {
+        width: 60px;
+    }
+    .icon-folder {
+        font-size: 36px;
+    }
+    .icon-label {
+        font-size: 9px;
+    }
+    .dependency-bar-container {
+        display: none;
+    }
+}
+
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+    .desktop-icon {
+        padding: 12px 4px;
+    }
+    .context-item {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+    .dialog-buttons button {
+        padding: 10px 20px;
+    }
 }
