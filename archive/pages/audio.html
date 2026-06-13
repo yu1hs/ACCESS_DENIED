@@ -3,22 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AUDIO - HEE_ARCHIVE</title>
+    <title>AUDIO - HEE</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0a0a;
             font-family: 'Segoe UI', 'Courier New', monospace;
             color: #ccc;
-            padding: 30px;
+            padding: 20px;
             min-height: 100vh;
         }
-
         .audio-header {
             border-bottom: 1px solid #333;
             padding-bottom: 15px;
@@ -26,36 +20,19 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-
-        .audio-header h2 {
-            color: #ffd966;
-            font-size: 20px;
-            letter-spacing: 2px;
-        }
-
-        .audio-stats {
-            font-size: 11px;
-            color: #ffd966;
-        }
-
-        .audio-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
+        .audio-header h2 { color: #ffd966; font-size: 20px; }
+        .audio-stats { font-size: 11px; color: #ffd966; }
+        .audio-list { display: flex; flex-direction: column; gap: 12px; }
         .audio-item {
             background: #0f0f0f;
             border: 1px solid #2a2a2a;
             border-radius: 10px;
             transition: all 0.2s;
         }
-
-        .audio-item:hover {
-            border-color: #3a6ea5;
-        }
-
+        .audio-item:hover { border-color: #3a6ea5; }
         .audio-control {
             display: flex;
             align-items: center;
@@ -63,59 +40,35 @@
             gap: 15px;
             cursor: pointer;
         }
-
         .play-btn {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             background: #1a1a1a;
             border: 1px solid #4a4a4a;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
-
-        .play-btn:hover {
-            background: #3a6ea5;
-            border-color: #5a8aba;
+        .play-btn:hover { background: #3a6ea5; border-color: #5a8aba; }
+        .play-btn.playing { background: #3a6ea5; animation: pulse 1s ease infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+        .audio-info { flex: 1; }
+        .audio-title { font-size: 14px; color: #ddd; font-family: monospace; }
+        .audio-duration { font-size: 10px; color: #666; margin-top: 3px; }
+        .audio-note { font-size: 11px; color: #888; font-style: italic; margin-top: 4px; }
+        .damage-badge {
+            font-size: 9px;
+            color: #ff6644;
+            margin-left: 8px;
+            background: rgba(255,68,68,0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
         }
-
-        .play-btn.playing {
-            background: #3a6ea5;
-            animation: pulse 1s ease infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .audio-info {
-            flex: 1;
-        }
-
-        .audio-title {
-            font-size: 14px;
-            color: #ddd;
-            font-family: monospace;
-        }
-
-        .audio-duration {
-            font-size: 10px;
-            color: #666;
-            margin-top: 3px;
-        }
-
-        .audio-note {
-            font-size: 11px;
-            color: #888;
-            font-style: italic;
-            margin-top: 4px;
-        }
-
         .transcript {
             display: none;
             padding: 16px;
@@ -125,11 +78,12 @@
             line-height: 1.6;
             color: #aaa;
         }
-
-        .transcript.open {
-            display: block;
+        .transcript.open { display: block; }
+        .corrupted-text {
+            color: #ff6644;
+            text-decoration: line-through;
+            opacity: 0.7;
         }
-
         .progress-section {
             margin-top: 30px;
             padding: 16px;
@@ -137,107 +91,200 @@
             border: 1px solid #2a2a2a;
             border-radius: 10px;
         }
-
-        .progress-bar {
-            background: #1a1a1a;
-            border-radius: 10px;
-            height: 6px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .progress-fill {
-            background: #ffd966;
-            height: 100%;
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        .progress-text {
-            font-size: 11px;
-            color: #888;
-            margin-top: 8px;
-            text-align: center;
-        }
-
-        .footer-note {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 11px;
-            color: #555;
-            padding-top: 20px;
-            border-top: 1px solid #222;
+        .progress-bar { background: #1a1a1a; border-radius: 10px; height: 6px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { background: #ffd966; height: 100%; width: 0%; transition: width 0.3s; }
+        .progress-text { font-size: 11px; color: #888; margin-top: 8px; text-align: center; }
+        .footer-note { margin-top: 30px; text-align: center; font-size: 11px; color: #555; padding-top: 20px; border-top: 1px solid #222; }
+        
+        @media (max-width: 600px) {
+            body { padding: 15px; }
+            .play-btn { width: 40px; height: 40px; font-size: 18px; }
+            .audio-title { font-size: 12px; }
         }
     </style>
 </head>
 <body>
     <div class="audio-header">
         <h2>🎧 AUDIO ARCHIVE</h2>
-        <div class="audio-stats" id="audioStats">已播放: 0 次</div>
+        <div class="audio-stats" id="audioStats">🎧 已播放: 0 次</div>
     </div>
-
     <div id="audioList" class="audio-list"></div>
-
     <div class="progress-section">
-        <div class="progress-bar">
-            <div id="progressFill" class="progress-fill"></div>
-        </div>
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
         <div id="progressText" class="progress-text"></div>
     </div>
-
     <div class="footer-note">
         💡 点击播放 · 录音时没想到有人会听，所以不完整<br>
         📝 可以查看转录文字了解内容
     </div>
 
     <script>
-        // 音频数据
+        // 音频数据 - 损坏的录音
         const audioFiles = [
-            {
-                id: 1,
-                title: "voice_01",
-                duration: "00:06",
-                transcript: "今天结束得有点晚。",
-                note: "录的时候没想到有人会听。"
-            },
-            {
-                id: 2,
-                title: "voice_02",
-                duration: "00:12",
-                transcript: "再来一次。...算了，今天就这样。",
-                note: "练习室。那天很累。"
-            },
-            {
-                id: 3,
-                title: "voice_03",
-                duration: "00:08",
-                transcript: "下雨了。忘记带伞了。...也不是第一次了。",
-                note: "便利店门口。"
-            },
-            {
-                id: 4,
-                title: "voice_04",
-                duration: "00:05",
-                transcript: "想说什么来着。...忘了。",
-                note: "深夜。"
-            },
-            {
-                id: 5,
-                title: "voice_05",
-                duration: "00:15",
-                transcript: "如果有人的话。...算了。",
-                note: "未完成。"
-            }
+            { id: 1, title: "voice_01", duration: "00:06", transcript: "今天结束得有点晚。", note: "录的时候没想到有人会听。", damaged: false },
+            { id: 2, title: "voice_02", duration: "00:12", transcript: "再来一次。...算了，今天就这样。", note: "练习室。那天很累。", damaged: true },
+            { id: 3, title: "voice_03", duration: "00:08", transcript: "下雨了。忘记带伞了。...也不是第一次了。", note: "便利店门口。", damaged: false },
+            { id: 4, title: "voice_04", duration: "00:05", transcript: "想说什么来着。...忘了。", note: "深夜。", damaged: true },
+            { id: 5, title: "voice_05", duration: "00:15", transcript: "如果有人的话。...算了。", note: "未完成。", damaged: true }
         ];
 
         let playCount = 0;
         let currentlyPlaying = null;
         let currentAudio = null;
-        const targetPlays = 2;  // 读者结局需要的播放次数
+        let currentSource = null;
+        let audioContext = null;
+        const targetPlays = 3;
+
+        // 初始化 AudioContext
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        // 生成损坏的电流声效果
+        function playCorruptedSound(duration, fileId, btnElement) {
+            const ctx = initAudioContext();
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+            
+            const now = ctx.currentTime;
+            
+            // 主噪声（电流声）
+            const bufferSize = 4096;
+            const noiseNode = ctx.createScriptProcessor(bufferSize, 1, 1);
+            noiseNode.onaudioprocess = function(e) {
+                const output = e.outputBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    // 随机噪声 + 间歇性爆音
+                    let noise = (Math.random() * 2 - 1) * 0.3;
+                    if (Math.random() < 0.05) {
+                        noise = (Math.random() * 2 - 1) * 0.8; // 爆音
+                    }
+                    output[i] = noise;
+                }
+            };
+            
+            // 低频嗡鸣
+            const humOsc = ctx.createOscillator();
+            humOsc.type = 'sawtooth';
+            humOsc.frequency.value = 60;
+            const humGain = ctx.createGain();
+            humGain.gain.value = 0.15;
+            humOsc.connect(humGain);
+            
+            // 高频吱吱声
+            const whineOsc = ctx.createOscillator();
+            whineOsc.type = 'sine';
+            whineOsc.frequency.value = 800;
+            const whineGain = ctx.createGain();
+            whineGain.gain.value = 0.05;
+            whineOsc.connect(whineGain);
+            
+            // 主输出
+            const masterGain = ctx.createGain();
+            masterGain.gain.value = 0.4;
+            
+            noiseNode.connect(masterGain);
+            humGain.connect(masterGain);
+            whineGain.connect(masterGain);
+            masterGain.connect(ctx.destination);
+            
+            // 开始
+            humOsc.start();
+            whineOsc.start();
+            
+            // 添加间歇性卡顿效果（音量波动）
+            const interval = setInterval(() => {
+                if (masterGain) {
+                    masterGain.gain.value = 0.1 + Math.random() * 0.3;
+                }
+            }, 200);
+            
+            // 停止所有
+            setTimeout(() => {
+                clearInterval(interval);
+                try {
+                    humOsc.stop();
+                    whineOsc.stop();
+                    noiseNode.disconnect();
+                    humGain.disconnect();
+                    whineGain.disconnect();
+                    masterGain.disconnect();
+                } catch(e) {}
+                
+                if (currentlyPlaying === fileId) {
+                    currentlyPlaying = null;
+                    btnElement.textContent = '▶';
+                    btnElement.classList.remove('playing');
+                }
+            }, duration * 1000);
+            
+            return { stop: () => {
+                clearInterval(interval);
+                try {
+                    humOsc.stop();
+                    whineOsc.stop();
+                    noiseNode.disconnect();
+                } catch(e) {}
+            }};
+        }
+
+        // 播放损坏音频
+        function playDamagedAudio(fileId, btnElement) {
+            if (currentAudio) {
+                if (currentAudio.stop) currentAudio.stop();
+                currentAudio = null;
+            }
+            if (currentSource) {
+                try { currentSource.disconnect(); } catch(e) {}
+                currentSource = null;
+            }
+            
+            if (currentlyPlaying === fileId) {
+                currentlyPlaying = null;
+                btnElement.textContent = '▶';
+                btnElement.classList.remove('playing');
+                return;
+            }
+            
+            if (currentlyPlaying && currentlyPlaying !== fileId) {
+                const prevBtn = document.getElementById(`playBtn${currentlyPlaying}`);
+                if (prevBtn) {
+                    prevBtn.textContent = '▶';
+                    prevBtn.classList.remove('playing');
+                }
+            }
+            
+            currentlyPlaying = fileId;
+            btnElement.textContent = '⏸';
+            btnElement.classList.add('playing');
+            
+            playCount++;
+            savePlayCount();
+            updateStatsDisplay();
+            updateProgress();
+            
+            // 播放损坏音效
+            const duration = fileId === 5 ? 4 : 3;
+            currentAudio = playCorruptedSound(duration, fileId, btnElement);
+            
+            // 自动停止
+            setTimeout(() => {
+                if (currentlyPlaying === fileId) {
+                    currentlyPlaying = null;
+                    btnElement.textContent = '▶';
+                    btnElement.classList.remove('playing');
+                    if (currentAudio && currentAudio.stop) currentAudio.stop();
+                }
+            }, duration * 1000);
+        }
 
         // 加载播放统计
         function loadPlayCount() {
-            const saved = localStorage.getItem('hee_archive_v3');
+            const saved = localStorage.getItem('hee_archive_dialogue');
             if (saved) {
                 const userData = JSON.parse(saved);
                 playCount = userData.audioPlayCount || 0;
@@ -247,24 +294,19 @@
         }
 
         function savePlayCount() {
-            const saved = localStorage.getItem('hee_archive_v3');
+            const saved = localStorage.getItem('hee_archive_dialogue');
             let userData = saved ? JSON.parse(saved) : {};
             userData.audioPlayCount = playCount;
-            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
-            
-            // 通知父窗口（触发结局检查）
-            if (window.parent && window.parent.playAudio) {
-                window.parent.playAudio();
-            }
+            localStorage.setItem('hee_archive_dialogue', JSON.stringify(userData));
         }
 
         function updateStatsDisplay() {
             const statsEl = document.getElementById('audioStats');
             if (statsEl) {
-                statsEl.textContent = `🎧 已播放: ${playCount} 次`;
+                statsEl.innerHTML = `🎧 已播放: ${playCount} 次`;
                 if (playCount >= targetPlays) {
+                    statsEl.innerHTML = `🎧 已播放: ${playCount} 次 ✨ 已完成 ✨`;
                     statsEl.style.color = '#ffd966';
-                    statsEl.innerHTML = `🎧 已播放: ${playCount} 次 ✨ 已达到条件 ✨`;
                 }
             }
         }
@@ -279,107 +321,26 @@
                     text.innerHTML = '✨ 已收听足够音频 · 继续探索其他内容 ✨';
                     text.style.color = '#ffd966';
                 } else {
-                    text.innerHTML = `读者进度: 收听 ${playCount}/${targetPlays} 段音频 · 听他说的话`;
+                    text.innerHTML = `收听进度: ${playCount}/${targetPlays} 段音频 · 听他说的话`;
                     text.style.color = '#888';
                 }
             }
         }
 
-        // 创建模拟音频（用 Web Audio API 生成简单音效）
-        function createBeepSound(duration, frequency = 440) {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = frequency;
-                gainNode.gain.value = 0.1;
-                
-                oscillator.start();
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
-                oscillator.stop(audioContext.currentTime + duration);
-                
-                return audioContext;
-            } catch(e) {
-                return null;
-            }
-        }
-
-        function playMockAudio(fileId, playBtn) {
-            // 停止当前播放
-            if (currentAudio) {
-                currentAudio.close();
-                currentAudio = null;
-            }
-            
-            // 更新按钮状态
-            if (currentlyPlaying && currentlyPlaying !== fileId) {
-                const prevBtn = document.getElementById(`playBtn${currentlyPlaying}`);
-                if (prevBtn) {
-                    prevBtn.textContent = '▶';
-                    prevBtn.classList.remove('playing');
-                }
-            }
-            
-            if (currentlyPlaying === fileId) {
-                // 停止播放
-                currentlyPlaying = null;
-                playBtn.textContent = '▶';
-                playBtn.classList.remove('playing');
-                return;
-            }
-            
-            // 播放新音频
-            currentlyPlaying = fileId;
-            playBtn.textContent = '⏸';
-            playBtn.classList.add('playing');
-            
-            // 增加播放次数
-            playCount++;
-            savePlayCount();
-            updateStatsDisplay();
-            updateProgress();
-            
-            // 模拟播放（实际项目中替换为真实音频文件）
-            const audioContext = createBeepSound(3, 400 + fileId * 30);
-            currentAudio = audioContext;
-            
-            // 显示播放提示
-            const file = audioFiles.find(f => f.id === fileId);
-            const playingMsg = document.createElement('div');
-            playingMsg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
-            playingMsg.textContent = `🎵 正在播放: ${file.title}`;
-            document.body.appendChild(playingMsg);
-            setTimeout(() => playingMsg.remove(), 2000);
-            
-            // 3秒后自动停止
-            setTimeout(() => {
-                if (currentlyPlaying === fileId) {
-                    currentlyPlaying = null;
-                    playBtn.textContent = '▶';
-                    playBtn.classList.remove('playing');
-                }
-            }, 3000);
-        }
-
         function renderAudioList() {
             const container = document.getElementById('audioList');
             container.innerHTML = '';
-
             audioFiles.forEach(file => {
                 const item = document.createElement('div');
                 item.className = 'audio-item';
                 
+                const damageBadge = file.damaged ? '<span class="damage-badge">⚠️ 损坏</span>' : '';
+                
                 item.innerHTML = `
                     <div class="audio-control" onclick="toggleTranscript(${file.id})">
-                        <div class="play-btn" id="playBtn${file.id}" onclick="event.stopPropagation(); playAudio(${file.id}, this)">
-                            ▶
-                        </div>
+                        <div class="play-btn" id="playBtn${file.id}" onclick="event.stopPropagation(); playAudio(${file.id}, this)">▶</div>
                         <div class="audio-info">
-                            <div class="audio-title">${file.title}</div>
+                            <div class="audio-title">${file.title} ${damageBadge}</div>
                             <div class="audio-duration">${file.duration}</div>
                             <div class="audio-note">💬 ${file.note}</div>
                         </div>
@@ -389,27 +350,22 @@
                         "${file.transcript}"
                     </div>
                 `;
-
                 container.appendChild(item);
             });
         }
 
         function toggleTranscript(fileId) {
             const transcript = document.getElementById(`transcript${fileId}`);
-            if (transcript) {
-                transcript.classList.toggle('open');
-            }
+            if (transcript) transcript.classList.toggle('open');
         }
 
         function playAudio(fileId, btnElement) {
-            playMockAudio(fileId, btnElement);
+            playDamagedAudio(fileId, btnElement);
         }
 
-        // 暴露全局函数
         window.toggleTranscript = toggleTranscript;
         window.playAudio = playAudio;
 
-        // 初始化
         renderAudioList();
         loadPlayCount();
     </script>
