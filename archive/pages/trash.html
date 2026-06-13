@@ -34,9 +34,9 @@
             letter-spacing: 2px;
         }
 
-        .trash-header .note {
+        .trash-stats {
             font-size: 11px;
-            color: #666;
+            color: #ffd966;
         }
 
         .file-list {
@@ -110,55 +110,103 @@
             color: #ff6644;
         }
 
+        .repair-attempt {
+            margin-top: 12px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #888;
+        }
+
+        .repair-btn {
+            margin-top: 8px;
+            background: #2a2a2a;
+            border: 1px solid #4a4a4a;
+            color: #aaa;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .repair-btn:hover {
+            background: #3a6ea5;
+            color: white;
+        }
+
+        .read-badge {
+            margin-left: 8px;
+            font-size: 10px;
+            color: #4ade80;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            background: #ffd966;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .restore-note {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 10px;
+            color: #555;
+        }
+
         .empty-trash {
             text-align: center;
             padding: 60px 20px;
             color: #555;
-        }
-
-        .chat-trigger {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 11px;
-            color: #444;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #222;
-            margin: 20px 0;
-        }
-
-        .restore-note {
-            font-size: 10px;
-            color: #555;
-            text-align: center;
-            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="trash-header">
         <h2>🗑️ TRASH</h2>
-        <div class="note">已删除的文件 · 可能被永久清除</div>
+        <div class="trash-stats" id="trashStats">📄 已读: 0/5</div>
     </div>
 
     <div id="fileList" class="file-list">
-        <!-- 动态加载文件列表 -->
         <div class="empty-trash">加载中...</div>
     </div>
 
-    <div class="restore-note">
-        💡 这些是被删除的文件。有些可能无法恢复。
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <div id="progressText" class="progress-text"></div>
     </div>
 
-    <div class="chat-trigger" id="chatTrigger">
-        <hr>
-        <span style="cursor:pointer;color:#666;" onclick="triggerChat()">💬 有什么想问的吗</span>
+    <div class="restore-note">
+        💡 这些是被删除的草稿。有些可能永远无法恢复。
     </div>
 
     <script>
-        // TRASH 文件数据
         const trashFiles = [
             {
                 id: 1,
@@ -166,7 +214,8 @@
                 date: "2024-03-15",
                 icon: "📄",
                 content: "今天很累。\n\n想说的话打到一半。\n不想说了。\n\n删掉。",
-                status: "deleted"
+                status: "deleted",
+                read: false
             },
             {
                 id: 2,
@@ -174,7 +223,8 @@
                 date: "2024-06-22",
                 icon: "📄",
                 content: "想发一条消息。\n\n「最近还好吗」\n\n算了。\n谁会回答。\n\n删掉。",
-                status: "deleted"
+                status: "deleted",
+                read: false
             },
             {
                 id: 3,
@@ -182,7 +232,8 @@
                 date: "2024-09-01",
                 icon: "📝",
                 content: "凌晨 02:47\n\n睡不着。\n\n练习室的灯很亮。\n亮得有点刺眼。\n\n但我喜欢。\n因为亮的时候不会想太多。\n\n…写这些干嘛。\n\n删掉。",
-                status: "deleted"
+                status: "deleted",
+                read: false
             },
             {
                 id: 4,
@@ -191,7 +242,8 @@
                 icon: "🖼️",
                 content: null,
                 corrupted: true,
-                status: "corrupted"
+                status: "corrupted",
+                read: false
             },
             {
                 id: 5,
@@ -199,7 +251,8 @@
                 date: "2024-11-11",
                 icon: "💌",
                 content: "写给某个人的。\n\n但我不知道你是谁。\n也许不存在。\n\n「今天发生了很好的事」\n「想让你知道」\n\n但不能这样。\n\n删掉。",
-                status: "deleted"
+                status: "deleted",
+                read: false
             },
             {
                 id: 6,
@@ -207,11 +260,151 @@
                 date: "2024-12-20",
                 icon: "🌙",
                 content: "凌晨 04:12\n\n又失眠了。\n\n今天在想一件事。\n…忘了。\n\n不重要。\n\n删掉。",
-                status: "deleted"
+                status: "deleted",
+                read: false
             }
         ];
 
-        let openFileId = null;
+        let readCount = 0;
+        let repairAttempted = false;
+        const totalFiles = trashFiles.filter(f => !f.corrupted).length;
+
+        function loadReadStatus() {
+            const saved = localStorage.getItem('hee_archive_v3');
+            if (saved) {
+                const userData = JSON.parse(saved);
+                if (userData.trashReadCount) {
+                    readCount = userData.trashReadCount;
+                }
+                if (userData.trashReadIds) {
+                    userData.trashReadIds.forEach(id => {
+                        const file = trashFiles.find(f => f.id === id);
+                        if (file) file.read = true;
+                    });
+                }
+                if (userData.trashRepairAttempted) {
+                    repairAttempted = true;
+                }
+            }
+            updateStats();
+            updateProgress();
+        }
+
+        function saveReadStatus() {
+            const saved = localStorage.getItem('hee_archive_v3');
+            let userData = saved ? JSON.parse(saved) : {};
+            const readIds = trashFiles.filter(f => f.read).map(f => f.id);
+            userData.trashReadIds = readIds;
+            userData.trashReadCount = readCount;
+            userData.trashRepairAttempted = repairAttempted;
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            
+            // 通知父窗口
+            if (window.parent && window.parent.markTrashRead) {
+                window.parent.markTrashRead(readCount);
+            }
+        }
+
+        function markAsRead(fileId) {
+            const file = trashFiles.find(f => f.id === fileId);
+            if (file && !file.read && !file.corrupted) {
+                file.read = true;
+                readCount++;
+                saveReadStatus();
+                updateStats();
+                updateProgress();
+                
+                // 显示已读提示
+                const badge = document.getElementById(`badge_${fileId}`);
+                if (badge) {
+                    badge.innerHTML = ' ✓ 已读';
+                    badge.style.color = '#4ade80';
+                }
+            }
+        }
+
+        function updateStats() {
+            const statsEl = document.getElementById('trashStats');
+            if (statsEl) {
+                statsEl.innerHTML = `📄 已读: ${readCount}/${totalFiles}`;
+                if (readCount >= totalFiles) {
+                    statsEl.innerHTML = `📄 已读: ${readCount}/${totalFiles} ✨ 已完成 ✨`;
+                    statsEl.style.color = '#ffd966';
+                }
+            }
+        }
+
+        function updateProgress() {
+            const percent = (readCount / totalFiles) * 100;
+            const fill = document.getElementById('progressFill');
+            const text = document.getElementById('progressText');
+            if (fill) fill.style.width = percent + '%';
+            if (text) {
+                if (readCount >= totalFiles) {
+                    text.innerHTML = '✨ 已阅读所有被删除的草稿 ✨';
+                    text.style.color = '#ffd966';
+                } else {
+                    text.innerHTML = `读者进度: 阅读 ${readCount}/${totalFiles} 份草稿 · 了解他的碎片`;
+                    text.style.color = '#888';
+                }
+            }
+        }
+
+        function attemptRepair(fileId, btnElement) {
+            if (repairAttempted) {
+                alert('修复失败。原文件已被覆盖。');
+                return;
+            }
+            
+            repairAttempted = true;
+            saveReadStatus();
+            
+            // 显示修复动画
+            btnElement.textContent = '修复中...';
+            btnElement.disabled = true;
+            
+            setTimeout(() => {
+                btnElement.textContent = '修复失败';
+                btnElement.style.background = '#4a2a2a';
+                btnElement.style.borderColor = '#884444';
+                
+                const statusSpan = document.getElementById(`status_${fileId}`);
+                if (statusSpan) {
+                    statusSpan.innerHTML = '⚠️ 损坏 · 无法恢复';
+                    statusSpan.style.color = '#ff6644';
+                }
+                
+                // 触发聊天
+                setTimeout(() => {
+                    const chatWindow = window.parent.document.getElementById('chatWindow');
+                    if (chatWindow && chatWindow.classList.contains('hidden')) {
+                        chatWindow.classList.remove('hidden');
+                    }
+                }, 500);
+            }, 1500);
+        }
+
+        function toggleFile(fileId) {
+            const file = trashFiles.find(f => f.id === fileId);
+            if (!file) return;
+            
+            const content = document.getElementById(`file-content-${fileId}`);
+            if (content) {
+                content.classList.toggle('open');
+            }
+            
+            // 标记为已读
+            if (!file.read && !file.corrupted) {
+                markAsRead(fileId);
+                
+                // 显示通知
+                const note = document.createElement('div');
+                note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+                note.textContent = '📖 已标记为已读';
+                document.body.appendChild(note);
+                setTimeout(() => note.remove(), 1500);
+            }
+        }
 
         function renderFileList() {
             const container = document.getElementById('fileList');
@@ -226,8 +419,34 @@
             trashFiles.forEach(file => {
                 const fileDiv = document.createElement('div');
                 fileDiv.className = 'file-item';
-                fileDiv.onclick = () => toggleFile(file.id);
+                fileDiv.onclick = (e) => {
+                    // 防止点击按钮时触发
+                    if (e.target.tagName !== 'BUTTON') {
+                        toggleFile(file.id);
+                    }
+                };
 
+                let statusHtml = '';
+                let repairHtml = '';
+                
+                if (file.corrupted) {
+                    statusHtml = `<span class="corrupted" id="status_${file.id}">⚠️ 损坏</span>`;
+                    if (!repairAttempted) {
+                        repairHtml = `
+                            <div class="repair-attempt">
+                                <span>💡 文件已损坏。尝试修复？</span>
+                                <button class="repair-btn" onclick="event.stopPropagation(); attemptRepair(${file.id}, this)">🔧 尝试修复</button>
+                            </div>
+                        `;
+                    } else {
+                        repairHtml = `<div class="repair-attempt"><span class="corrupted">❌ 修复失败。原文件已被覆盖。</span></div>`;
+                    }
+                } else {
+                    statusHtml = `<span id="status_${file.id}">🗑️ 已删除 ${file.read ? '<span style="color:#4ade80;">✓ 已读</span>' : ''}</span>`;
+                }
+
+                const readBadge = file.read && !file.corrupted ? '<span class="read-badge">✓ 已读</span>' : '';
+                
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'file-content';
                 contentDiv.id = `file-content-${file.id}`;
@@ -236,7 +455,7 @@
                     contentDiv.innerHTML = `
                         <span class="corrupted">⚠️ 文件已损坏，无法查看。</span><br>
                         <span style="font-size:11px;color:#555;">文件名: ${file.name}</span><br>
-                        <span style="font-size:11px;color:#444;">尝试修复...失败。原文件已被覆盖。</span>
+                        ${repairHtml}
                     `;
                 } else if (file.content) {
                     contentDiv.innerHTML = file.content.replace(/\n/g, '<br>');
@@ -248,10 +467,10 @@
                     <div class="file-header">
                         <div class="file-icon">${file.icon}</div>
                         <div class="file-info">
-                            <div class="file-name">${file.name}</div>
+                            <div class="file-name">${file.name} ${readBadge}</div>
                             <div class="file-date">${file.date}</div>
                         </div>
-                        <div class="file-status">${file.corrupted ? '⚠️ 损坏' : '🗑️ 已删除'}</div>
+                        <div class="file-status">${statusHtml}</div>
                     </div>
                 `;
                 
@@ -260,46 +479,9 @@
             });
         }
 
-        function toggleFile(fileId) {
-            const content = document.getElementById(`file-content-${fileId}`);
-            if (content) {
-                content.classList.toggle('open');
-            }
-            
-            // 记录查看行为，触发聊天
-            if (openFileId !== fileId) {
-                checkTrashInteraction();
-            }
-            openFileId = fileId === openFileId ? null : fileId;
-        }
-
-        let trashInteracted = false;
-
-        function checkTrashInteraction() {
-            if (!trashInteracted) {
-                trashInteracted = true;
-                // 触发聊天（通过 parent 窗口）
-                if (window.parent && window.parent.triggerFirstChat) {
-                    // 如果聊天还没开始，触发
-                }
-                // 显示通知
-                console.log('用户查看了回收站内容');
-            }
-        }
-
-        // 触发聊天（通过消息框）
-        function triggerChat() {
-            // 尝试显示聊天窗口
-            const chatWindow = window.parent.document.getElementById('chatWindow');
-            if (chatWindow) {
-                chatWindow.classList.remove('hidden');
-            }
-        }
-
-        // 初始化
         renderFileList();
+        loadReadStatus();
 
-        // 控制台彩蛋
         console.log('%c🗑️ 这些是被删除的东西。有些连我自己都忘了写过。', 'color: #888;');
     </script>
 </body>
