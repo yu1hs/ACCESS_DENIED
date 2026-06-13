@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEE_ARCHIVE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题栏 -->
+        <div class="header">
+            <div class="logo">HEE_ARCHIVE</div>
+            <div class="header-status">
+                <span id="onlineStatus">🔒</span>
+                <span id="onlineText">OFFLINE</span>
+            </div>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="main">
+            <!-- 左侧导航栏 -->
+            <div class="sidebar">
+                <div class="nav-item" data-page="home">🏠 HOME</div>
+                <div class="nav-item locked" data-page="profile">🔒 PROFILE</div>
+                <div class="nav-item locked" data-page="photo">🔒 PHOTO</div>
+                <div class="nav-item locked" data-page="audio">🔒 AUDIO</div>
+                <div class="nav-item locked" data-page="log">🔒 LOG</div>
+                <div class="nav-item locked" data-page="favorites">🔒 FAVORITES</div>
+                <div class="nav-item" data-page="trash">🗑️ TRASH</div>
+                <div class="nav-item hidden" id="userNav" data-page="user">👤 USER</div>
+            </div>
+
+            <!-- 右侧内容区（iframe 加载页面） -->
+            <div class="content-area">
+                <iframe id="pageFrame" src="pages/home.html"></iframe>
+            </div>
+        </div>
+
+        <!-- 底部状态栏 -->
+        <div class="footer">
+            <div class="footer-left">
+                <span id="loginCount">访问次数: --</span>
+            </div>
+            <div class="footer-right">
+                <span id="lastLogin">上次登录: --</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天窗口 -->
+    <div id="chatWindow" class="chat-window hidden">
+        <div class="chat-header">
+            <span>💬 与 羲承 的对话</span>
+            <button id="closeChat">✕</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-system">对话已建立连接...</div>
+        </div>
+        <div class="chat-input-area">
+            <div class="chat-options" id="chatOptions"></div>
+            <input type="text" id="chatInput" placeholder="输入消息..." class="hidden">
+            <button id="chatSend" class="hidden">发送</button>
+        </div>
+    </div>
+
+    <!-- 聊天通知气泡 -->
+    <div id="chatNotify" class="chat-notify hidden">💬 新消息</div>
+
+    <!-- 全局加载遮罩 -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">加载中...</div>
+    </div>
+
+    <script src="data/data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
