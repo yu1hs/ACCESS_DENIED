@@ -12,7 +12,6 @@ body {
     font-family: 'Segoe UI', 'Microsoft YaHei', monospace;
 }
 
-/* 壁纸 */
 .wallpaper {
     position: fixed;
     top: 0;
@@ -23,7 +22,6 @@ body {
     z-index: -1;
 }
 
-/* 桌面图标区域 */
 .desktop-icons {
     position: absolute;
     top: 20px;
@@ -67,7 +65,6 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* 任务栏 */
 .taskbar {
     position: fixed;
     bottom: 0;
@@ -126,7 +123,6 @@ body {
     transform: scale(1.05);
 }
 
-/* 右键菜单 */
 .context-menu {
     position: fixed;
     background: #2d2d2d;
@@ -155,7 +151,6 @@ body {
     color: white;
 }
 
-/* 对话框 */
 .dialog {
     position: fixed;
     top: 0;
@@ -179,16 +174,15 @@ body {
     border: 1px solid #5a5a5a;
     border-radius: 10px;
     padding: 24px;
-    min-width: 320px;
+    min-width: 300px;
     color: #e8e8e8;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 .dialog-content h3 {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     color: #ffd966;
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 16px;
 }
 
 .prop-row {
@@ -212,14 +206,13 @@ body {
 }
 
 .dialog-buttons {
-    margin-top: 24px;
+    margin-top: 20px;
     display: flex;
     gap: 12px;
     justify-content: flex-end;
 }
 
-.dialog-buttons button,
-.dialog-close {
+.dialog-buttons button, .dialog-close {
     padding: 6px 20px;
     background: #3a3a3a;
     border: 1px solid #5a5a5a;
@@ -227,16 +220,13 @@ body {
     border-radius: 5px;
     cursor: pointer;
     font-size: 13px;
-    transition: all 0.2s;
 }
 
-.dialog-buttons button:hover,
-.dialog-close:hover {
-    background: #4a6a8a;
-    border-color: #7a9aba;
+.dialog-buttons button:hover, .dialog-close:hover {
+    background: #3a6ea5;
+    border-color: #5a8aba;
 }
 
-/* 通知 */
 .notification {
     position: fixed;
     bottom: 55px;
@@ -259,17 +249,10 @@ body {
 }
 
 @keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
-/* 启动画面 */
 .boot-screen {
     position: fixed;
     top: 0;
@@ -284,9 +267,7 @@ body {
     transition: opacity 1s ease;
 }
 
-.boot-screen.fade-out {
-    opacity: 0;
-}
+.boot-screen.fade-out { opacity: 0; }
 
 .boot-text {
     color: #2a8a2a;
@@ -296,24 +277,25 @@ body {
     text-shadow: 0 0 5px #2a8a2a;
 }
 
-.boot-done {
-    margin-top: 20px;
-    color: #4ade80;
+.boot-done { margin-top: 20px; color: #4ade80; }
+
+@media (max-width: 600px) {
+    .desktop-icon { width: 70px; }
+    .icon-folder { font-size: 42px; }
+    .icon-label { font-size: 10px; }
+    .dialog-content { margin: 20px; min-width: auto; }
 }
 
-/* 响应式 */
-@media (max-width: 600px) {
-    .desktop-icon {
-        width: 70px;
-    }
-    .icon-folder {
-        font-size: 42px;
-    }
-    .icon-label {
-        font-size: 10px;
-    }
-    .dialog-content {
-        margin: 20px;
-        min-width: auto;
-    }
+#passwordInput {
+    background: #1a1a1a;
+    border: 1px solid #4a4a4a;
+    color: white;
+    border-radius: 6px;
+    padding: 8px;
+    width: 100%;
+}
+
+#passwordInput:focus {
+    outline: none;
+    border-color: #ffd966;
 }
