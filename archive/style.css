@@ -330,3 +330,16 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.familiarity-bar {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+}
