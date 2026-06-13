@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USER - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Courier New', monospace;
+            color: #ccc;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .user-header {
+            border-bottom: 1px solid #ffd966;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .user-header h2 {
+            color: #ffd966;
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .stats-card {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 25px;
+        }
+
+        .stat-group {
+            margin-bottom: 25px;
+        }
+
+        .stat-group h4 {
+            color: #ffd966;
+            font-size: 14px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .stat-label {
+            color: #888;
+        }
+
+        .stat-value {
+            color: #ddd;
+            font-family: monospace;
+        }
+
+        .profile-answer {
+            background: #0a0a0a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #aaa;
+            font-style: italic;
+            border-left: 3px solid #ffd966;
+        }
+
+        .notes-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: #0a0a0a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .notes-content {
+            font-size: 14px;
+            color: #ffd966;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .final-message {
+            margin-top: 25px;
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid #2a2a2a;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-header">
+        <h2>👤 USER ARCHIVE</h2>
+    </div>
+
+    <div class="stats-card" id="statsContainer">
+        <div class="stat-group">
+            <h4>📊 访问数据</h4>
+            <div id="visitStats"></div>
+        </div>
+
+        <div class="stat-group">
+            <h4>📝 你的记录</h4>
+            <div id="userRecords"></div>
+        </div>
+    </div>
+
+    <div class="notes-section">
+        <h4>📌 NOTES</h4>
+        <div class="notes-content" id="notesContent">
+            加载中...
+        </div>
+    </div>
+
+    <div class="final-message" id="finalMessage"></div>
+
+    <script>
+        function loadUserData() {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (!saved) {
+                document.getElementById('visitStats').innerHTML = '<div class="stat-row">暂无数据</div>';
+                return;
+            }
+            
+            const userData = JSON.parse(saved);
+            
+            // 访问统计
+            const firstVisit = userData.firstVisit ? new Date(userData.firstVisit).toLocaleDateString() : '今天';
+            const visitCount = userData.visitCount || 1;
+            const unlockedCount = (userData.unlockedPages?.length || 0);
+            const chatCount = userData.conversations?.filter(c => c.type === 'chat').length || 0;
+            
+            document.getElementById('visitStats').innerHTML = `
+                <div class="stat-row">
+                    <span class="stat-label">首次访问</span>
+                    <span class="stat-value">${firstVisit}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">总访问次数</span>
+                    <span class="stat-value">${visitCount}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">解锁页面数</span>
+                    <span class="stat-value">${unlockedCount}/7</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">对话次数</span>
+                    <span class="stat-value">${chatCount}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">最长停留</span>
+                    <span class="stat-value">${userData.longestStay || 0} 分钟</span>
+                </div>
+            `;
+            
+            // 用户记录
+            let recordsHtml = '';
+            if (userData.profileAnswer) {
+                recordsHtml += `
+                    <div style="margin-bottom:15px;">
+                        <div style="font-size:12px;color:#888;">你在 PROFILE 中写的印象：</div>
+                        <div class="profile-answer">"${userData.profileAnswer}"</div>
+                        ${userData.profileResponse ? `<div style="font-size:11px;color:#ffd966;margin-top:5px;">→ 羲承：${userData.profileResponse}</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            if (userData.skyDescription) {
+                recordsHtml += `
+                    <div class="stat-row">
+                        <span class="stat-label">你描述的天空</span>
+                        <span class="stat-value">"${userData.skyDescription}"</span>
+                    </div>
+                `;
+            }
+            
+            if (userData.logContinued) {
+                recordsHtml += `
+                    <div class="stat-row">
+                        <span class="stat-label">LOG 选择</span>
+                        <span class="stat-value">选择了「继续写」</span>
+                    </div>
+                `;
+            }
+            
+            if (!recordsHtml) {
+                recordsHtml = '<div class="stat-row"><span class="stat-label">暂无记录</span><span class="stat-value">继续探索吧</span></div>';
+            }
+            
+            document.getElementById('userRecords').innerHTML = recordsHtml;
+            
+            // NOTES 内容
+            document.getElementById('notesContent').innerHTML = `
+                会认真看完所有东西的人。<br><br>
+                <span style="font-size:11px;color:#666;">（没有下文了）<br>不是忘了写。是觉得这句话就够了。</span>
+            `;
+            
+            // 最终消息
+            if (unlockedCount >= 7) {
+                document.getElementById('finalMessage').innerHTML = `
+                    🦌 你已经解锁了所有页面。<br>
+                    你不是找到了密码。<br>
+                    你是待得够久。<br><br>
+                    「谢谢。不是谢谢你来这里。是谢谢你待了那么久。」
+                `;
+            } else {
+                document.getElementById('finalMessage').innerHTML = `
+                    💭 还有一些页面没有解锁。<br>
+                    继续和羲承对话吧。
+                `;
+            }
+        }
+        
+        loadUserData();
+        
+        // 监听数据变化
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'hee_archive_user') {
+                loadUserData();
+            }
+        });
+    </script>
+</body>
+</html>
