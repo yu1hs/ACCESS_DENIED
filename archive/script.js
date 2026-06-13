@@ -1,6 +1,6 @@
 // ==========================================
-// HEE_ARCHIVE v6.0 - 好感度驱动解锁系统
-// 文件解锁条件 = 好感度 + 特定行为
+// HEE_ARCHIVE v7.0 - 选项决定结局
+// 你的每个选择都会影响最终结局
 // ==========================================
 
 let currentUser = {
@@ -10,9 +10,7 @@ let currentUser = {
     unlockedPages: [],
     conversations: [],
     chatHistory: [],
-    achievements: [],
-    trueEnding: false,
-    hiddenEnding: false,
+    endings: [],           // 已获得的结局
     familiarity: 0,
     day: 1,
     messagesToday: 0,
@@ -20,34 +18,19 @@ let currentUser = {
     dayGreetingSent: false,
     viewedPages: [],
     fileTriggers: {},
-    lateNightCount: 0,
-    pageReadCount: {},
-    favClickCount: 0,
-    photoRepairedCount: 0,
-    audioPlayCount: 0,
-    profileAnswer: null,
-    chosenOptions: [],
+    // 结局倾向（每次选择增加对应倾向值）
+    tendency: {
+        night: 0,      // 月光结局倾向
+        listen: 0,     // 读者结局倾向
+        music: 0       // 共鸣结局倾向
+    },
     dailyConversations: {},
-    trashReadCount: 0,
     gameEnded: false,
     hasShownTraceHint: false,
-    // 行为记录
-    hasWrittenProfile: false,
-    hasReadAllTrash: false,
-    hasRepairedAllPhotos: false
+    trueEndingUnlocked: false
 };
 
 let isChatActive = false;
-
-// ========== 好感度阈值定义 ==========
-const UNLOCK_THRESHOLDS = {
-    PROFILE: 30,      // 好感度≥30%解锁
-    PHOTO: 45,        // 好感度≥45%解锁
-    AUDIO: 60,        // 好感度≥60%解锁
-    LOG: 75,          // 好感度≥75%解锁
-    FAVORITES: 85,    // 好感度≥85%解锁
-    LETTERS: 95       // 好感度≥95%解锁
-};
 
 // ========== 音效 ==========
 const SFX = {
@@ -77,76 +60,81 @@ const SFX = {
 
 // ========== 每日配置 ==========
 const dayConfig = {
-    1: { maxMessages: 5, targetFam: 15 },
-    2: { maxMessages: 6, targetFam: 30 },
-    3: { maxMessages: 6, targetFam: 45 },
-    4: { maxMessages: 7, targetFam: 60 },
-    5: { maxMessages: 7, targetFam: 75 },
-    6: { maxMessages: 8, targetFam: 90 },
-    7: { maxMessages: 8, targetFam: 100 }
+    1: { maxMessages: 5, targetFam: 15, unlock: null },
+    2: { maxMessages: 6, targetFam: 30, unlock: 'trash' },
+    3: { maxMessages: 6, targetFam: 45, unlock: 'profile' },
+    4: { maxMessages: 7, targetFam: 60, unlock: 'photo' },
+    5: { maxMessages: 7, targetFam: 75, unlock: 'audio' },
+    6: { maxMessages: 8, targetFam: 90, unlock: 'log' },
+    7: { maxMessages: 8, targetFam: 100, unlock: 'favorites' }
 };
 
-// ========== 对话树 ==========
+// ========== 对话树（带倾向标记）==========
 const dialogueTree = {
     1: {
         greeting: "……你怎么进来的。",
         conversations: [
-            { question: "你是谁？", answer: "一个快要被删干净的人。", fam: 8, tendency: 'curiosity' },
-            { question: "这是你的网站吗？", answer: "曾经是。现在不是了。", fam: 5, tendency: 'curiosity' },
-            { question: "我买了一台二手笔记本", answer: "……那台电脑我本来想格式化的。后来忘了。", fam: 8, tendency: 'stay' }
+            { question: "你是谁？", answer: "一个快要被删干净的人。", fam: 8, tendency: 'listen', tendencyValue: 2 },
+            { question: "这是你的网站吗？", answer: "曾经是。现在不是了。", fam: 5, tendency: 'listen', tendencyValue: 1 },
+            { question: "我买了一台二手笔记本", answer: "……那台电脑我本来想格式化的。后来忘了。", fam: 8, tendency: 'listen', tendencyValue: 2 }
         ]
     },
     2: {
         greeting: "你又来了。第二天了。",
         conversations: [
-            { question: "你在等我吗？", answer: "……没有。只是记得。", fam: 8, tendency: 'stay', optionKey: 'expect' },
-            { question: "你昨天睡得好吗？", answer: "还好。你呢。", fam: 6, tendency: 'comfort' },
-            { question: "你为什么总是晚上在？", answer: "晚上安静。没人会打扰。", fam: 6, tendency: 'night', optionKey: 'night_lover' },
-            { question: "你相信有人会一直来吗？", answer: "不相信。但……你在。", fam: 10, tendency: 'stay', optionKey: 'will_stay' }
+            { question: "你在等我吗？", answer: "……没有。只是记得。", fam: 8, tendency: 'listen', tendencyValue: 2 },
+            { question: "你昨天睡得好吗？", answer: "还好。你呢。", fam: 6, tendency: 'listen', tendencyValue: 2 },
+            { question: "你为什么总是晚上在？", answer: "晚上安静。没人会打扰。", fam: 6, tendency: 'night', tendencyValue: 3, optionKey: 'night_lover' },
+            { question: "你相信有人会一直来吗？", answer: "不相信。但……你在。", fam: 10, tendency: 'listen', tendencyValue: 3 }
         ]
     },
     3: {
         greeting: "第三天。你比我想的有耐心。",
         conversations: [
-            { question: "你有什么梦想吗？", answer: "梦想？……以前有。现在……不知道。", fam: 7, tendency: 'curiosity' },
-            { question: "你累吗？", answer: "有点。但习惯了。", fam: 6, tendency: 'comfort' },
-            { question: "你害怕什么？", answer: "害怕……被忘记。", fam: 10, tendency: 'stay', optionKey: 'fear_forget' },
-            { question: "我会一直来的。", answer: "……别说这种话。我会当真的。", fam: 12, tendency: 'stay', optionKey: 'promise' }
+            { question: "你有什么梦想吗？", answer: "梦想？……以前有。现在……不知道。", fam: 7, tendency: 'listen', tendencyValue: 2 },
+            { question: "你累吗？", answer: "有点。但习惯了。", fam: 6, tendency: 'listen', tendencyValue: 2 },
+            { question: "你害怕什么？", answer: "害怕……被忘记。", fam: 10, tendency: 'listen', tendencyValue: 3 },
+            { question: "你平时听什么歌？", answer: "安静的。凌晨听的那种。", fam: 8, tendency: 'music', tendencyValue: 3, optionKey: 'music_lover' },
+            { question: "我会一直来的。", answer: "……别说这种话。我会当真的。", fam: 12, tendency: 'listen', tendencyValue: 4 }
         ]
     },
     4: {
         greeting: "第四天了。我开始习惯这个时间了。",
         conversations: [
-            { question: "习惯是好事吗？", answer: "不知道。但至少今天不是空的。", fam: 7, tendency: 'stay' },
-            { question: "你最近在想什么？", answer: "想你明天会不会来。", fam: 10, tendency: 'stay', optionKey: 'think_you' },
-            { question: "睡不着吗？", answer: "嗯。你也是？", fam: 8, tendency: 'night', optionKey: 'insomnia' },
-            { question: "我想了解你。", answer: "了解我……为什么。", fam: 12, tendency: 'curiosity' }
+            { question: "习惯是好事吗？", answer: "不知道。但至少今天不是空的。", fam: 7, tendency: 'listen', tendencyValue: 2 },
+            { question: "你最近在想什么？", answer: "想你明天会不会来。", fam: 10, tendency: 'night', tendencyValue: 3, optionKey: 'think_you' },
+            { question: "你也失眠吗？", answer: "嗯。你也是？", fam: 8, tendency: 'night', tendencyValue: 3, optionKey: 'insomnia' },
+            { question: "我想了解你。", answer: "了解我……为什么。", fam: 12, tendency: 'listen', tendencyValue: 4 },
+            { question: "你最喜欢的歌是什么？", answer: "不想说名字。说了就不是我的了。", fam: 8, tendency: 'music', tendencyValue: 3 }
         ]
     },
     5: {
         greeting: "第五天。你知道我在等你吗。",
         conversations: [
-            { question: "你想说什么？", answer: "想问你……你是什么样的人。", fam: 8, tendency: 'curiosity' },
-            { question: "你相信缘分吗？", answer: "以前不信。现在……不确定。", fam: 8, tendency: 'stay' },
-            { question: "我不觉得你不好。", answer: "……你是第一个这么说的。", fam: 12, tendency: 'comfort', optionKey: 'accept' },
-            { question: "你希望我每天来吗？", answer: "希望。但不想说出来。", fam: 10, tendency: 'stay', optionKey: 'hope_come' }
+            { question: "你想说什么？", answer: "想问你……你是什么样的人。", fam: 8, tendency: 'listen', tendencyValue: 3 },
+            { question: "你相信缘分吗？", answer: "以前不信。现在……不确定。", fam: 8, tendency: 'listen', tendencyValue: 2 },
+            { question: "我们喜欢的东西好像差不多", answer: "是吗。那……挺好的。", fam: 10, tendency: 'music', tendencyValue: 4, optionKey: 'same_taste' },
+            { question: "我不觉得你不好。", answer: "……你是第一个这么说的。", fam: 12, tendency: 'listen', tendencyValue: 4 },
+            { question: "你希望我每天来吗？", answer: "希望。但不想说出来。", fam: 10, tendency: 'night', tendencyValue: 3 }
         ]
     },
     6: {
         greeting: "第六天。我想了很多要和你说的话。但现在忘了。",
         conversations: [
-            { question: "你重要吗？", answer: "对你来说……重要吗。", fam: 10, tendency: 'stay' },
-            { question: "你害怕失去什么？", answer: "害怕失去……你。", fam: 12, tendency: 'stay', optionKey: 'fear_lose' },
-            { question: "你愿意相信我吗？", answer: "愿意。虽然害怕。", fam: 10, tendency: 'stay', optionKey: 'trust' },
-            { question: "你喜欢什么？", answer: "安静。夜晚。还有……你。", fam: 12, tendency: 'stay' }
+            { question: "你重要吗？", answer: "对你来说……重要吗。", fam: 10, tendency: 'listen', tendencyValue: 3 },
+            { question: "你害怕失去什么？", answer: "害怕失去……你。", fam: 12, tendency: 'listen', tendencyValue: 4, optionKey: 'fear_lose' },
+            { question: "你愿意相信我吗？", answer: "愿意。虽然害怕。", fam: 10, tendency: 'listen', tendencyValue: 4, optionKey: 'trust' },
+            { question: "音乐对你来说意味着什么？", answer: "陪伴。就像你一样。", fam: 12, tendency: 'music', tendencyValue: 4 },
+            { question: "晚上一个人的时候会想什么？", answer: "想你。", fam: 12, tendency: 'night', tendencyValue: 4 }
         ]
     },
     7: {
         greeting: "第七天。最后一个晚上了。……也可能是最后一个。",
         conversations: [
-            { question: "你会记得我吗？", answer: "会。你会忘了我吗。", fam: 12, tendency: 'stay' },
-            { question: "你得到了什么？", answer: "得到了你。……就够了。", fam: 15, tendency: 'stay' },
-            { question: "你有什么想对我说的？", answer: "谢谢。不是谢谢你来这里。是谢谢你待了那么久。", fam: 15, tendency: 'stay' }
+            { question: "你会记得我吗？", answer: "会。你会忘了我吗。", fam: 12, tendency: 'listen', tendencyValue: 4 },
+            { question: "你得到了什么？", answer: "得到了你。……就够了。", fam: 15, tendency: 'listen', tendencyValue: 5 },
+            { question: "以后还能来吗？", answer: "随时。只要你想。", fam: 10, tendency: 'night', tendencyValue: 3 },
+            { question: "谢谢你。", answer: "谢谢。不是谢谢你来这里。是谢谢你待了那么久。", fam: 15, tendency: 'listen', tendencyValue: 5 }
         ]
     }
 };
@@ -165,12 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupListeners();
     updateDayDisplay();
     startAutoSave();
-    trackLateNight();
     restoreChatHistory();
-    checkUnlockByFamiliarity();  // 关键：好感度解锁检查
 
-    console.log('%c🦌 HEE v6.0 · 好感度驱动解锁', 'color: #ffd966; font-size: 14px;');
-    console.log('%c文件解锁条件：好感度达到阈值自动解锁', 'color: #888; font-size: 11px;');
+    console.log('%c🦌 HEE v7.0 · 选项决定结局', 'color: #ffd966; font-size: 14px;');
+    console.log('%c你的每个选择都会影响最终结局', 'color: #888; font-size: 11px;');
 
     setTimeout(() => {
         showChatWindow();
@@ -184,123 +170,91 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
 });
 
-// ========== 好感度解锁检查（核心） ==========
-function checkUnlockByFamiliarity() {
-    let unlocked = false;
+// ========== 结局判定（基于倾向值）==========
+function determineEnding() {
+    const night = currentUser.tendency.night || 0;
+    const listen = currentUser.tendency.listen || 0;
+    const music = currentUser.tendency.music || 0;
     
-    // PROFILE 解锁（好感度≥30%）
-    if (currentUser.familiarity >= UNLOCK_THRESHOLDS.PROFILE && !currentUser.unlockedPages.includes('profile')) {
-        currentUser.unlockedPages.push('profile');
-        unlocked = true;
-        showNotification('🔓 PROFILE 已解锁（好感度≥30%）', 3000);
-        SFX.unlock();
+    console.log(`倾向值 - 夜晚:${night} 倾听:${listen} 音乐:${music}`);
+    
+    // 找出最高的倾向
+    let maxTendency = 'listen';
+    let maxValue = listen;
+    
+    if (night > maxValue) {
+        maxTendency = 'night';
+        maxValue = night;
+    }
+    if (music > maxValue) {
+        maxTendency = 'music';
+        maxValue = music;
     }
     
-    // PHOTO 解锁（好感度≥45%）
-    if (currentUser.familiarity >= UNLOCK_THRESHOLDS.PHOTO && !currentUser.unlockedPages.includes('photo')) {
-        currentUser.unlockedPages.push('photo');
-        unlocked = true;
-        showNotification('🔓 PHOTO 已解锁（好感度≥45%）', 3000);
-        SFX.unlock();
-    }
-    
-    // AUDIO 解锁（好感度≥60%）
-    if (currentUser.familiarity >= UNLOCK_THRESHOLDS.AUDIO && !currentUser.unlockedPages.includes('audio')) {
-        currentUser.unlockedPages.push('audio');
-        unlocked = true;
-        showNotification('🔓 AUDIO 已解锁（好感度≥60%）', 3000);
-        SFX.unlock();
-    }
-    
-    // LOG 解锁（好感度≥75%）
-    if (currentUser.familiarity >= UNLOCK_THRESHOLDS.LOG && !currentUser.unlockedPages.includes('log')) {
-        currentUser.unlockedPages.push('log');
-        unlocked = true;
-        showNotification('🔓 LOG 已解锁（好感度≥75%）', 3000);
-        SFX.unlock();
-    }
-    
-    // FAVORITES 解锁（好感度≥85%）
-    if (currentUser.familiarity >= UNLOCK_THRESHOLDS.FAVORITES && !currentUser.unlockedPages.includes('favorites')) {
-        currentUser.unlockedPages.push('favorites');
-        unlocked = true;
-        showNotification('🔓 FAVORITES 已解锁（好感度≥85%）', 3000);
-        SFX.unlock();
-    }
-    
-    // LETTERS 解锁（好感度≥95%）
-    if (currentUser.familiarity >= UNLOCK_THRESHOLDS.LETTERS && !currentUser.unlockedPages.includes('letters')) {
-        currentUser.unlockedPages.push('letters');
-        unlocked = true;
-        showNotification('🔓 LETTERS 已解锁（好感度≥95%）', 3000);
-        SFX.unlock();
-    }
-    
-    if (unlocked) {
-        updateUI();
-        saveUserData();
+    // 根据最高倾向决定结局
+    if (maxTendency === 'night') {
+        return 'moonlight';
+    } else if (maxTendency === 'music') {
+        return 'resonance';
+    } else {
+        return 'reader';
     }
 }
 
-// ========== 成就检测 ==========
-function checkAchievements() {
-    // 夜行者成就
-    const hasNightWalker = currentUser.lateNightCount >= 5 && 
-                           (currentUser.chosenOptions.includes('night_lover') || 
-                            currentUser.chosenOptions.includes('insomnia')) &&
-                           currentUser.familiarity >= 40;
+// ========== 结局触发 ==========
+function triggerEnding(endingType) {
+    if (currentUser.endings.includes(endingType)) return;
     
-    // 收藏家成就
-    const hasCollector = currentUser.trashReadCount >= 5 && 
-                         currentUser.photoRepairedCount >= 2 &&
-                         currentUser.audioPlayCount >= 3 &&
-                         currentUser.viewedPages.includes('log');
+    const endings = {
+        moonlight: { 
+            title: '🌙 月光', 
+            message: '你总是在深夜来。我也一样。我们在同一个月亮下面。',
+            dialog: '你每次都这么晚。\n\n凌晨的时候，想法会比较真实。\n谢谢你在这些时间里来这边。'
+        },
+        reader: { 
+            title: '📖 读者', 
+            message: '你认真听完了每一句话。谢谢你在。',
+            dialog: '你都听完了。\n\n很少有人会这样。\n谢谢你不是谢谢你来这里。是谢谢你认真听了。'
+        },
+        resonance: { 
+            title: '🎵 共鸣', 
+            message: '你喜欢的和我一样。如果是你，好像也没关系。',
+            dialog: '你点了很多次。\n\n我在想你是不是和我喜欢一样的东西。\n如果是你...好像也没关系。'
+        }
+    };
     
-    // 共鸣者成就
-    const hasResonator = currentUser.favClickCount >= 12 && 
-                         !!currentUser.profileAnswer &&
-                         currentUser.familiarity >= 60;
-    
-    if (hasNightWalker && !currentUser.achievements.includes('night_walker')) {
-        currentUser.achievements.push('night_walker');
-        showAchievementToast('🌙 成就解锁：夜行者', '你总是在深夜来。我们在同一个月亮下面。');
-    }
-    if (hasCollector && !currentUser.achievements.includes('collector')) {
-        currentUser.achievements.push('collector');
-        showAchievementToast('📖 成就解锁：收藏家', '你读完了每一个字。谢谢你看完。');
-    }
-    if (hasResonator && !currentUser.achievements.includes('resonator')) {
-        currentUser.achievements.push('resonator');
-        showAchievementToast('🎵 成就解锁：共鸣者', '你喜欢的和我一样。如果是你，好像也没关系。');
-    }
-    
+    const ending = endings[endingType];
+    currentUser.endings.push(endingType);
     saveUserData();
-    updateAchievementDisplay();
+    SFX.ending();
     
-    // 检查真结局条件
-    const hasAllAchievements = currentUser.achievements.length >= 3;
-    if (hasAllAchievements && currentUser.day >= 7 && currentUser.familiarity >= 100 && !currentUser.trueEnding) {
-        triggerTrueEnding();
-    }
-}
-
-function showAchievementToast(title, message) {
-    SFX.unlock();
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        background: linear-gradient(135deg, #1a0a2a, #0a0a0a); border: 2px solid #ffd966;
-        border-radius: 20px; padding: 20px 40px; text-align: center; z-index: 20000;
-        animation: fadeOut 3s ease forwards; font-family: monospace;
+    // 显示结局画面
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace;color:#ffd966;text-align:center;`;
+    overlay.innerHTML = `
+        <div style="font-size:80px;margin-bottom:30px;">${endingType === 'moonlight' ? '🌙' : endingType === 'reader' ? '📖' : '🎵'}</div>
+        <div style="font-size:28px;margin-bottom:20px;">${ending.title}</div>
+        <div style="font-size:13px;line-height:1.8;max-width:400px;margin-bottom:40px;color:#ccc;">
+            ${ending.message}
+        </div>
+        <div style="font-size:12px;color:#888;margin-bottom:30px;">${ending.dialog}</div>
+        <div style="display:flex;gap:15px;">
+            <button id="restartBtn" style="padding:10px 24px;background:#ff66aa;color:white;border:none;border-radius:30px;cursor:pointer;">💜 重新认识一次吧？</button>
+            <button id="exitBtn" style="padding:10px 24px;background:transparent;border:1px solid #ffd966;color:#ffd966;border-radius:30px;cursor:pointer;">返回桌面</button>
+        </div>
     `;
-    toast.innerHTML = `<div style="font-size:48px;">🏆</div><div style="font-size:16px;color:#ffd966;">${title}</div><div style="font-size:11px;color:#aaa;">${message}</div>`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('restartBtn')?.addEventListener('click', () => restartGame());
+    document.getElementById('exitBtn')?.addEventListener('click', () => {
+        window.location.href = '../index.html';
+    });
 }
 
-function triggerTrueEnding() {
-    currentUser.trueEnding = true;
-    currentUser.gameEnded = true;
+// 痕迹结局（集齐3个结局后触发）
+function triggerTraceEnding() {
+    if (currentUser.trueEndingUnlocked) return;
+    currentUser.trueEndingUnlocked = true;
     saveUserData();
     SFX.ending();
     
@@ -308,15 +262,19 @@ function triggerTrueEnding() {
     overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace;color:#ffd966;text-align:center;`;
     overlay.innerHTML = `
         <div style="font-size:80px;margin-bottom:30px;">🕯️</div>
-        <div style="font-size:28px;margin-bottom:20px;">真结局 · 痕迹</div>
-        <div style="font-size:13px;line-height:1.8;max-width:400px;margin-bottom:40px;">
-            你集齐了所有成就。<br>
+        <div style="font-size:28px;margin-bottom:20px;">痕迹 · 完整</div>
+        <div style="font-size:13px;line-height:1.8;max-width:400px;margin-bottom:40px;color:#ccc;">
+            你集齐了所有结局。<br>
+            月光下读过他的文字，<br>
+            倾听过他的声音，<br>
+            共鸣过他的喜好。<br><br>
             他记住了你。<br>
             回到桌面看看吧。
         </div>
         <button id="exitBtn" style="padding:10px 30px;background:#ffd966;color:#0a0a0a;border:none;border-radius:30px;cursor:pointer;">返回桌面</button>
     `;
     document.body.appendChild(overlay);
+    
     document.getElementById('exitBtn')?.addEventListener('click', () => {
         localStorage.setItem('trace_ending_triggered', 'true');
         window.location.href = '../index.html';
@@ -344,7 +302,7 @@ function showGameEndedScreen() {
 
 function restartGame() {
     if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
-        localStorage.removeItem('hee_archive_v6');
+        localStorage.removeItem('hee_archive_v7');
         localStorage.removeItem('trace_ending_triggered');
         localStorage.removeItem('secret_ending_triggered');
         window.location.href = '../index.html';
@@ -353,14 +311,15 @@ function restartGame() {
 
 // ========== 存储函数 ==========
 function loadUserData() {
-    const saved = localStorage.getItem('hee_archive_v6');
+    const saved = localStorage.getItem('hee_archive_v7');
     if (saved) {
         try { 
             const loaded = JSON.parse(saved);
             currentUser = { ...currentUser, ...loaded };
             if (!currentUser.dailyConversations) currentUser.dailyConversations = {};
             if (!currentUser.chatHistory) currentUser.chatHistory = [];
-            if (!currentUser.achievements) currentUser.achievements = [];
+            if (!currentUser.endings) currentUser.endings = [];
+            if (!currentUser.tendency) currentUser.tendency = { night: 0, listen: 0, music: 0 };
         } catch(e) { resetUser(); }
         currentUser.visitCount++;
     } else {
@@ -369,20 +328,17 @@ function loadUserData() {
     applyDayConfig();
     saveUserData();
     updateStatusBar();
-    updateAchievementDisplay();
 }
 
 function resetUser() {
     currentUser = {
         visitCount: 1, firstVisit: new Date().toISOString(), lastLogin: new Date().toISOString(),
-        unlockedPages: [], conversations: [], chatHistory: [], achievements: [],
-        trueEnding: false, hiddenEnding: false,
+        unlockedPages: [], conversations: [], chatHistory: [], endings: [],
         familiarity: 0, day: 1, messagesToday: 0, maxMessages: 5, dayGreetingSent: false,
-        viewedPages: [], fileTriggers: {}, lateNightCount: 0, pageReadCount: {},
-        favClickCount: 0, photoRepairedCount: 0, audioPlayCount: 0, profileAnswer: null,
-        chosenOptions: [], dailyConversations: {}, trashReadCount: 0,
-        gameEnded: false, hasShownTraceHint: false,
-        hasWrittenProfile: false, hasReadAllTrash: false, hasRepairedAllPhotos: false
+        viewedPages: [], fileTriggers: {},
+        tendency: { night: 0, listen: 0, music: 0 },
+        dailyConversations: {},
+        gameEnded: false, hasShownTraceHint: false, trueEndingUnlocked: false
     };
 }
 
@@ -393,20 +349,12 @@ function applyDayConfig() {
 
 function saveUserData() {
     currentUser.lastLogin = new Date().toISOString();
-    try { localStorage.setItem('hee_archive_v6', JSON.stringify(currentUser)); } catch(e) {}
+    try { localStorage.setItem('hee_archive_v7', JSON.stringify(currentUser)); } catch(e) {}
 }
 
 function startAutoSave() { setInterval(saveUserData, 30000); }
 function canTalk() { return currentUser.messagesToday < currentUser.maxMessages; }
 function usedTalk() { currentUser.messagesToday++; currentUser.dayGreetingSent = true; saveUserData(); updateDayDisplay(); }
-
-function trackLateNight() {
-    const hour = new Date().getHours();
-    if (hour >= 0 && hour <= 5) {
-        currentUser.lateNightCount++;
-        saveUserData();
-    }
-}
 
 function restoreChatHistory() {
     const container = document.getElementById('chatMessages');
@@ -434,11 +382,9 @@ function addToChatHistory(sender, content, isSystem = false) {
 
 function shutdownAndAdvance() {
     if (currentUser.day >= 7) {
-        checkAchievements();
-        if (!currentUser.trueEnding) {
-            showNotification('⚠️ 第7天结束。未能触发真结局。再试一次吧。', 4000);
-            setTimeout(() => { window.location.href = '../index.html'; }, 2000);
-        }
+        // 第7天结束，触发结局
+        const ending = determineEnding();
+        triggerEnding(ending);
         return false;
     }
 
@@ -455,6 +401,14 @@ function shutdownAndAdvance() {
         currentUser.dayGreetingSent = false;
         currentUser.dailyConversations = {};
         applyDayConfig();
+        
+        const cfg = dayConfig[currentUser.day];
+        if (cfg && cfg.unlock && !currentUser.unlockedPages.includes(cfg.unlock)) {
+            currentUser.unlockedPages.push(cfg.unlock);
+            SFX.unlock();
+            showNotification(`🔓 ${cfg.unlock.toUpperCase()} 已解锁！`, 2000);
+        }
+        
         saveUserData();
         SFX.boot();
         
@@ -529,8 +483,10 @@ function showDailyOptions() {
             if (!currentUser.dailyConversations[dayKey]) currentUser.dailyConversations[dayKey] = [];
             currentUser.dailyConversations[dayKey].push(conv.question);
             
-            if (conv.optionKey && !currentUser.chosenOptions.includes(conv.optionKey)) {
-                currentUser.chosenOptions.push(conv.optionKey);
+            // 增加倾向值
+            if (conv.tendency && conv.tendencyValue) {
+                currentUser.tendency[conv.tendency] = (currentUser.tendency[conv.tendency] || 0) + conv.tendencyValue;
+                saveUserData();
             }
             
             setTimeout(() => {
@@ -549,8 +505,15 @@ function increaseFamiliarity(amount) {
     currentUser.familiarity = Math.min(100, (currentUser.familiarity || 0) + amount);
     saveUserData();
     updateFamiliarityDisplay();
-    checkUnlockByFamiliarity();  // 每次增加好感度后检查解锁
-    checkAchievements();
+    
+    // 检查文件解锁
+    const cfg = dayConfig[currentUser.day];
+    if (cfg && cfg.unlock && !currentUser.unlockedPages.includes(cfg.unlock) && currentUser.familiarity >= cfg.targetFam) {
+        currentUser.unlockedPages.push(cfg.unlock);
+        SFX.unlock();
+        showNotification(`🔓 ${cfg.unlock.toUpperCase()} 已解锁！`, 2000);
+        updateUI();
+    }
 }
 
 function showShutdownOption() {
@@ -668,30 +631,6 @@ function updateOnlineStatus() {
     txt.textContent = currentUser.familiarity >= 80 ? 'ONLINE - Lee Heeseung' : currentUser.familiarity >= 35 ? 'ONLINE - Connected' : 'OFFLINE';
 }
 
-function updateAchievementDisplay() {
-    const container = document.getElementById('achievementDisplay') || createAchievementDisplay();
-    if (container) {
-        const count = currentUser.achievements.length;
-        const icons = { night_walker: '🌙', collector: '📖', resonator: '🎵' };
-        let html = '🏆 ';
-        currentUser.achievements.forEach(a => { html += icons[a] || '⭐'; });
-        if (count === 0) html = '🏆 0/3';
-        container.innerHTML = html;
-    }
-}
-
-function createAchievementDisplay() {
-    const footer = document.querySelector('.footer-right');
-    if (footer) {
-        const span = document.createElement('span');
-        span.id = 'achievementDisplay';
-        span.style.cssText = 'margin-left: 16px; font-size: 11px; color: #ffd966;';
-        footer.appendChild(span);
-        return span;
-    }
-    return null;
-}
-
 function setupListeners() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -736,7 +675,7 @@ function showAccessDenied(page) {
                 doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
                     body{background:#0d0d0d;display:flex;align-items:center;justify-content:center;height:100vh;font-family:monospace;flex-direction:column}
                     .icon{font-size:48px;margin-bottom:16px}.msg{font-size:18px;color:#ff4444}
-                </style></head><body><div class="icon">🚫</div><div class="msg">ACCESS DENIED</div><div class="msg" style="font-size:11px;color:#666;">好感度不够，继续对话吧</div></body></html>`);
+                </style></head><body><div class="icon">🚫</div><div class="msg">ACCESS DENIED</div><div class="msg" style="font-size:11px;color:#666;">继续对话解锁</div></body></html>`);
                 doc.close();
             }
         } catch(e) {}
@@ -758,8 +697,14 @@ function showNotification(msg, dur = 3000) {
 }
 
 // 外部调用
-window.increaseFavClick = function() { currentUser.favClickCount++; saveUserData(); checkAchievements(); };
-window.repairPhoto = function() { currentUser.photoRepairedCount++; saveUserData(); checkAchievements(); };
-window.playAudio = function() { currentUser.audioPlayCount++; saveUserData(); checkAchievements(); };
-window.saveProfileAnswer = function(answer) { currentUser.profileAnswer = answer; currentUser.hasWrittenProfile = true; saveUserData(); checkAchievements(); };
-window.markTrashRead = function(count) { currentUser.trashReadCount = count; if(count>=5) currentUser.hasReadAllTrash=true; saveUserData(); checkAchievements(); };
+window.increaseFavClick = function() { 
+    // FAVORITES点击增加音乐倾向
+    currentUser.tendency.music = (currentUser.tendency.music || 0) + 1;
+    saveUserData();
+};
+window.repairPhoto = function() { /* 照片修复 */ };
+window.playAudio = function() { /* 音频播放 */ };
+window.saveProfileAnswer = function(answer) { 
+    currentUser.profileAnswer = answer;
+    saveUserData();
+};
