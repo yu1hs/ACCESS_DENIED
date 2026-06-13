@@ -131,22 +131,22 @@
     </div>
 
     <script>
-        // 收藏数据 - 把图片路径改成你的实际文件名
+        // 收藏数据 - 使用绝对路径（替换成你的用户名）
         const favoritesData = {
             songs: [
-                { emoji: "🎵", title: "凌晨三点的歌", image: "assets/images/favorites/song1.jpg", note: "凌晨三点听比较好。\n白天听的话就没感觉了。" },
-                { emoji: "🎶", title: "写给谁都可以", image: "assets/images/favorites/song2.jpg", note: "第一次听的时候觉得这是写给别人的。\n后来发现写给谁都行。" },
-                { emoji: "🎧", title: "想起某天", image: "assets/images/favorites/song3.jpg", note: "这首不常听。\n但每次听都会想起某天。" }
+                { emoji: "🎵", title: "凌晨三点的歌", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/song1.jpg", note: "凌晨三点听比较好。\n白天听的话就没感觉了。" },
+                { emoji: "🎶", title: "写给谁都可以", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/song2.jpg", note: "第一次听的时候觉得这是写给别人的。\n后来发现写给谁都行。" },
+                { emoji: "🎧", title: "想起某天", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/song3.jpg", note: "这首不常听。\n但每次听都会想起某天。" }
             ],
             movies: [
-                { emoji: "🎬", title: "看了很多遍", image: "assets/images/favorites/movie1.jpg", note: "第二次看比第一次好。\n第三次比第二次差一点。" },
-                { emoji: "📽️", title: "不喜欢的结局", image: "assets/images/favorites/movie2.jpg", note: "结局不喜欢。\n但前面的部分看了很多遍。" },
-                { emoji: "🎞️", title: "画面很美", image: "assets/images/favorites/movie3.jpg", note: "不知道在讲什么。\n画面很好看。够了。" }
+                { emoji: "🎬", title: "看了很多遍", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/movie1.jpg", note: "第二次看比第一次好。\n第三次比第二次差一点。" },
+                { emoji: "📽️", title: "不喜欢的结局", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/movie2.jpg", note: "结局不喜欢。\n但前面的部分看了很多遍。" },
+                { emoji: "🎞️", title: "画面很美", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/movie3.jpg", note: "不知道在讲什么。\n画面很好看。够了。" }
             ],
             photos: [
-                { emoji: "📷", title: "天气很好", image: "assets/images/favorites/fav_photo1.jpg", note: "天气很好那天。" },
-                { emoji: "🌅", title: "没人", image: "assets/images/favorites/fav_photo2.jpg", note: "没人。" },
-                { emoji: "🌃", title: "想发出去", image: "assets/images/favorites/fav_photo3.jpg", note: "那天本来想发出去的。" }
+                { emoji: "📷", title: "天气很好", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/fav_photo1.jpg", note: "天气很好那天。" },
+                { emoji: "🌅", title: "没人", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/fav_photo2.jpg", note: "没人。" },
+                { emoji: "🌃", title: "想发出去", image: "https://yu1hs.github.io/ACCESS_DENIED/archive/assets/images/favorites/fav_photo3.jpg", note: "那天本来想发出去的。" }
             ]
         };
 
@@ -212,7 +212,7 @@
             }
         }
 
-        function renderCard(item, category, index) {
+        function renderCard(item) {
             const card = document.createElement('div');
             card.className = 'fav-card';
             card.onclick = () => {
@@ -224,7 +224,6 @@
                 setTimeout(() => note.remove(), 1500);
             };
             
-            // 图片处理
             let imageHtml = '';
             if (item.image) {
                 imageHtml = `<img src="${item.image}" alt="${item.title}" onerror="this.parentElement.innerHTML='<div class=\'no-img\'>${item.emoji}</div>'">`;
@@ -247,8 +246,8 @@
             const container = document.getElementById(containerId);
             if (!container) return;
             container.innerHTML = '';
-            items.forEach((item, index) => {
-                container.appendChild(renderCard(item, category, index));
+            items.forEach((item) => {
+                container.appendChild(renderCard(item));
             });
         }
 
