@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>??? - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 动态星空背景 */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 0.8; }
+        }
+
+        /* 主容器 */
+        .true-ending-container {
+            position: relative;
+            z-index: 10;
+            max-width: 650px;
+            padding: 40px;
+            text-align: center;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 217, 102, 0.3);
+            border-radius: 24px;
+            margin: 40px 20px;
+            animation: fadeIn 2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 鹿角装饰 */
+        .deer-silhouette {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 4s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* 主标题 */
+        .ending-title {
+            font-size: 28px;
+            color: #ffd966;
+            letter-spacing: 4px;
+            margin-bottom: 30px;
+            font-weight: normal;
+            border-bottom: 1px solid rgba(255, 217, 102, 0.3);
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        /* 核心句子 */
+        .core-message {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #ddd;
+            margin: 40px 0;
+            font-style: italic;
+        }
+
+        .core-message span {
+            color: #ffd966;
+            font-size: 22px;
+        }
+
+        /* 分隔线 */
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: #ffd966;
+            margin: 30px auto;
+            opacity: 0.5;
+        }
+
+        /* 对话风格段落 */
+        .dialogue-box {
+            background: rgba(30, 30, 40, 0.6);
+            border-left: 3px solid #ffd966;
+            padding: 20px 24px;
+            margin: 30px 0;
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #bbb;
+        }
+
+        /* 签名 */
+        .signature {
+            margin: 30px 0 20px;
+            font-size: 14px;
+            color: #ffd966;
+            letter-spacing: 2px;
+        }
+
+        /* 时间戳 */
+        .timestamp {
+            font-size: 10px;
+            color: #555;
+            margin-top: 20px;
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 28px;
+            background: transparent;
+            border: 1px solid #ffd966;
+            color: #ffd966;
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: #ffd966;
+            color: #0a0a0a;
+        }
+
+        /* 隐藏的彩蛋 */
+        .easter-egg {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: #333;
+            cursor: pointer;
+            z-index: 20;
+        }
+
+        .easter-egg:hover {
+            color: #ffd966;
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .true-ending-container {
+                padding: 24px;
+                margin: 20px;
+            }
+            .ending-title {
+                font-size: 22px;
+            }
+            .core-message {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="true-ending-container">
+        <div class="deer-silhouette" id="deerIcon">🦌</div>
+        
+        <h1 class="ending-title">✦ 痕迹 · 完整 ✦</h1>
+
+        <div class="core-message">
+            <span>「</span>你找到的不是一个人的秘密，<br>
+            而是一个人愿意留下来的痕迹。<span>」</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="dialogue-box">
+            <p>你看到了。</p>
+            <p style="margin-top: 12px;">那个后缀。</p>
+            <p style="margin-top: 12px;">其实我一直留着。等某个人发现。</p>
+            <p style="margin-top: 20px; color: #ffd966;">—— 李羲承</p>
+        </div>
+
+        <div class="dialogue-box">
+            <p>谢谢你。</p>
+            <p>把所有的痕迹都看完了。</p>
+            <p style="margin-top: 20px; font-size: 12px; color: #888;">这个网站不会关。<br>至少我不会主动关。</p>
+            <p style="margin-top: 12px;">所以你想来的时候。</p>
+            <p>随时。</p>
+        </div>
+
+        <div class="signature">
+            —— 李羲承
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="dynamicMessage" class="timestamp" style="font-size: 11px; color: #666;">
+            正在生成时间戳...
+        </div>
+
+        <button class="back-btn" onclick="goBack()">⟡ 返回 HEE_ARCHIVE ⟡</button>
+    </div>
+
+    <div class="easter-egg" id="easterEgg">
+        🔍
+    </div>
+
+    <script>
+        // ========== 生成星空背景 ==========
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const starCount = 150;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 3 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 5 + 's';
+                star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        createStars();
+
+        // ========== 生成时间戳 ==========
+        function updateTimestamp() {
+            const now = new Date();
+            const timestamp = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const msgDiv = document.getElementById('dynamicMessage');
+            msgDiv.innerHTML = `📅 你到达这里的时间 · ${timestamp}<br>🦌 痕迹已确认 · 谢谢你`;
+        }
+        updateTimestamp();
+
+        // ========== 返回到 archive ==========
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+
+        // ========== 彩蛋：点击鹿角触发额外对话 ==========
+        const deerIcon = document.getElementById('deerIcon');
+        let clickCount = 0;
+        
+        if (deerIcon) {
+            deerIcon.addEventListener('click', () => {
+                clickCount++;
+                if (clickCount === 3) {
+                    const msgDiv = document.getElementById('dynamicMessage');
+                    msgDiv.innerHTML += '<br><br>✨ 你发现了隐藏的角落。✨';
+                    msgDiv.style.color = '#ffd966';
+                    
+                    // 控制台彩蛋
+                    console.log('%c🦌 你发现了我藏在这里的最后一句话。', 'color: #ffd966; font-size: 12px;');
+                    console.log('%c「其实，我一直知道你会来。」', 'color: #aaa; font-style: italic;');
+                }
+            });
+        }
+
+        // ========== 彩蛋2：右下角鹿角 ==========
+        const easterEgg = document.getElementById('easterEgg');
+        if (easterEgg) {
+            easterEgg.addEventListener('click', () => {
+                console.log('%c┌─────────────────────────────────────────────┐', '#ffd966');
+                console.log('%c│                                             │', '#ffd966');
+                console.log('%c│   「你找到的不是一个人的秘密，               │', '#ffd966');
+                console.log('%c│     而是一个人愿意留下来的痕迹。」            │', '#ffd966');
+                console.log('%c│                                             │', '#ffd966');
+                console.log('%c│   —— 李羲承                                 │', '#ffd966');
+                console.log('%c│                                             │', '#ffd966');
+                console.log('%c│   你已经认识了李羲承。                       │', '#ffd966');
+                console.log('%c│                                             │', '#ffd966');
+                console.log('%c└─────────────────────────────────────────────┘', '#ffd966');
+                
+                alert('🦌 控制台藏着一句话，去看看？');
+            });
+        }
+
+        // ========== 页面访问记录（标记真结局已触发） ==========
+        function markTrueEnding() {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (saved) {
+                let userData = JSON.parse(saved);
+                if (!userData.endings.includes('true')) {
+                    userData.endings.push('true');
+                    userData.trueEndingDate = new Date().toISOString();
+                    localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+                    console.log('✨ 真结局已记录 ✨');
+                }
+            } else {
+                // 如果没有用户数据，创建一个
+                const newUser = {
+                    visitCount: 1,
+                    firstVisit: new Date().toISOString(),
+                    lastLogin: new Date().toISOString(),
+                    unlockedPages: ['profile', 'photo', 'audio', 'log', 'favorites'],
+                    conversations: [],
+                    endings: ['true'],
+                    trueEndingDate: new Date().toISOString()
+                };
+                localStorage.setItem('hee_archive_user', JSON.stringify(newUser));
+            }
+        }
+
+        markTrueEnding();
+
+        // ========== 控制台欢迎 ==========
+        console.log('%c✨ 欢迎来到真结局 ✨', 'color: #ffd966; font-size: 16px; font-weight: bold;');
+        console.log('%c「你找到的不是一个人的秘密，而是一个人愿意留下来的痕迹。」', 'color: #aaa; font-style: italic; font-size: 12px;');
+    </script>
+</body>
+</html>
