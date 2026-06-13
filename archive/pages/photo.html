@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHOTO - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #ccc;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .photo-header {
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .photo-header h2 {
+            color: #ffd966;
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .photo-card {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .photo-card:hover {
+            border-color: #3a6ea5;
+            transform: translateY(-2px);
+        }
+
+        .photo-preview {
+            aspect-ratio: 1;
+            background: #060606;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .photo-info {
+            padding: 12px;
+        }
+
+        .photo-title {
+            font-size: 14px;
+            color: #ffd966;
+            margin-bottom: 4px;
+        }
+
+        .photo-desc {
+            font-size: 11px;
+            color: #777;
+            margin-bottom: 8px;
+        }
+
+        .repair-area {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #222;
+        }
+
+        .repair-input {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ddd;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .repair-btn {
+            background: #2a2a2a;
+            border: none;
+            color: #aaa;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .repair-btn:hover {
+            background: #3a6ea5;
+            color: white;
+        }
+
+        .repaired {
+            color: #4ade80;
+            font-size: 11px;
+        }
+
+        .locked {
+            filter: blur(8px);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="photo-header">
+        <h2>📷 PHOTO ARCHIVE</h2>
+    </div>
+
+    <div id="photoGrid" class="photo-grid"></div>
+
+    <script>
+        const photos = [
+            { id: 1, title: "天空", emoji: "🌅", needRepair: true, repaired: false, description: "某天练习完出来看到的。" },
+            { id: 2, title: "练习室", emoji: "🪞", needRepair: true, repaired: false, description: "那时候每天都在这里。…还在。" },
+            { id: 3, title: "便利店", emoji: "🏪", needRepair: true, repaired: false, description: "两点。很安静。只有自动门开开合合的声音。" },
+            { id: 4, title: "侧影", emoji: "👤", needRepair: false, repaired: true, description: "拍太久了。有点忘了那天是什么心情。但应该不是不好的心情。" }
+        ];
+
+        function loadRepairStatus() {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (saved) {
+                const userData = JSON.parse(saved);
+                if (userData.repairedPhotos) {
+                    userData.repairedPhotos.forEach(id => {
+                        const photo = photos.find(p => p.id === id);
+                        if (photo) photo.repaired = true;
+                    });
+                }
+            }
+        }
+
+        function saveRepairStatus() {
+            const saved = localStorage.getItem('hee_archive_user');
+            let userData = saved ? JSON.parse(saved) : {};
+            const repairedIds = photos.filter(p => p.repaired).map(p => p.id);
+            userData.repairedPhotos = repairedIds;
+            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+        }
+
+        function repairPhoto(photoId, inputElement, btnElement) {
+            const photo = photos.find(p => p.id === photoId);
+            if (!photo || photo.repaired) return;
+
+            const value = inputElement.value.trim();
+            if (!value) {
+                alert('请先输入描述');
+                return;
+            }
+
+            photo.repaired = true;
+            saveRepairStatus();
+            renderPhotoGrid();
+
+            // 记录到用户数据
+            const saved = localStorage.getItem('hee_archive_user');
+            let userData = saved ? JSON.parse(saved) : {};
+            if (!userData.photoRepairs) userData.photoRepairs = [];
+            userData.photoRepairs.push({ id: photoId, description: value, time: Date.now() });
+            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+
+            // 触发聊天
+            setTimeout(() => {
+                const chatWindow = window.parent.document.getElementById('chatWindow');
+                if (chatWindow) chatWindow.classList.remove('hidden');
+            }, 500);
+        }
+
+        function renderPhotoGrid() {
+            const container = document.getElementById('photoGrid');
+            container.innerHTML = '';
+
+            photos.forEach(photo => {
+                const card = document.createElement('div');
+                card.className = 'photo-card';
+
+                let repairHtml = '';
+                if (photo.needRepair && !photo.repaired) {
+                    repairHtml = `
+                        <div class="repair-area">
+                            <input type="text" class="repair-input" id="repairInput${photo.id}" placeholder="${photo.needRepair === true ? '请描述你记忆中的样子...' : '输入内容...'}">
+                            <button class="repair-btn" onclick="repairPhoto(${photo.id}, document.getElementById('repairInput${photo.id}'), this)">修复照片</button>
+                        </div>
+                    `;
+                } else if (photo.repaired) {
+                    repairHtml = `<div class="repaired">✅ 已修复 · ${photo.description}</div>`;
+                } else if (!photo.needRepair) {
+                    repairHtml = `<div class="repaired">📸 ${photo.description}</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="photo-preview">${photo.emoji}</div>
+                    <div class="photo-info">
+                        <div class="photo-title">${photo.title}</div>
+                        <div class="photo-desc">${photo.repaired ? '已解锁' : '🔒 需要修复'}</div>
+                        ${repairHtml}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        loadRepairStatus();
+        renderPhotoGrid();
+
+        window.repairPhoto = repairPhoto;
+    </script>
+</body>
+</html>
