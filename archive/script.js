@@ -237,15 +237,41 @@ function triggerFakeEnding() {
     setTimeout(() => {
         showChatMessage('system', '🔒 剩余档案需要特殊权限', true);
         showChatMessage('heeseung', '也许有一天...你会找到方法。\n\n（页面角落有一行很小的字：?evan1015）');
+        
+        // 添加一个可点击的链接按钮
+        const chatOptionsContainer = document.getElementById('chatOptions');
+        if (chatOptionsContainer) {
+            chatOptionsContainer.innerHTML = '';
+            const btn = document.createElement('button');
+            btn.className = 'chat-option-btn';
+            btn.textContent = '🔑 尝试输入特殊代码';
+            btn.onclick = () => {
+                showChatMessage('user', '?evan1015');
+                setTimeout(() => {
+                    showChatMessage('heeseung', '你确定要试试吗？\n\n...\n\n好吧。如果这是你的选择。');
+                    setTimeout(() => {
+                        showChatMessage('system', '✨ 正在跳转... ✨', true);
+                        setTimeout(() => {
+                            window.location.href = 'true-ending.html?evan1015';
+                        }, 1500);
+                    }, 1500);
+                }, 500);
+                chatOptionsContainer.innerHTML = '';
+                const chatInput = document.getElementById('chatInput');
+                const chatSend = document.getElementById('chatSend');
+                if (chatInput) chatInput.classList.remove('hidden');
+                if (chatSend) chatSend.classList.remove('hidden');
+            };
+            chatOptionsContainer.appendChild(btn);
+        }
     }, 3000);
     
-    // 右下角出现小提示
+    // 右下角出现小提示（可点击跳转）
     const hint = document.createElement('div');
-    hint.style.cssText = 'position:fixed;bottom:100px;right:20px;background:#1a1a1a;border:1px solid #3a6ea5;padding:8px 16px;border-radius:8px;font-size:10px;color:#666;z-index:100;cursor:pointer;';
-    hint.innerHTML = '🔍 有一行很小的字...';
+    hint.style.cssText = 'position:fixed;bottom:100px;right:20px;background:#1a1a1a;border:1px solid #3a6ea5;padding:8px 16px;border-radius:8px;font-size:10px;color:#ffd966;z-index:100;cursor:pointer;';
+    hint.innerHTML = '🔑 ?evan1015';
     hint.onclick = () => {
-        showNotification('?evan1015', 3000);
-        hint.remove();
+        window.location.href = 'true-ending.html?evan1015';
     };
     document.body.appendChild(hint);
     
@@ -257,14 +283,13 @@ function triggerFakeEnding() {
 // ========== 真结局 ==========
 function triggerTrueEnding() {
     currentUser.trueEndingTriggered = true;
+    if (!currentUser.endings.includes('true')) {
+        currentUser.endings.push('true');
+    }
     saveUserData();
     
     // 改变整个界面
     document.body.style.background = '#0a0a0a';
-    
-    // 桌面图标变化
-    const archiveIcon = window.parent.document.querySelector('.archive-icon .icon-folder');
-    if (archiveIcon) archiveIcon.textContent = '🦌';
     
     // 聊天窗真结局
     showChatMessage('system', '✨✨✨ 真结局已触发 ✨✨✨', true);
@@ -350,19 +375,32 @@ function setupEventListeners() {
         });
     });
     
-    document.getElementById('closeChat')?.addEventListener('click', () => {
-        document.getElementById('chatWindow').classList.add('hidden');
-    });
+    const closeChat = document.getElementById('closeChat');
+    if (closeChat) {
+        closeChat.addEventListener('click', () => {
+            document.getElementById('chatWindow').classList.add('hidden');
+        });
+    }
     
-    document.getElementById('chatNotify')?.addEventListener('click', () => {
-        document.getElementById('chatWindow').classList.remove('hidden');
-        document.getElementById('chatNotify').classList.add('hidden');
-    });
+    const chatNotify = document.getElementById('chatNotify');
+    if (chatNotify) {
+        chatNotify.addEventListener('click', () => {
+            document.getElementById('chatWindow').classList.remove('hidden');
+            document.getElementById('chatNotify').classList.add('hidden');
+        });
+    }
     
-    document.getElementById('chatSend')?.addEventListener('click', sendMessage);
-    document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
+    const chatSend = document.getElementById('chatSend');
+    if (chatSend) {
+        chatSend.addEventListener('click', sendMessage);
+    }
+    
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
 }
 
 function showAccessDenied(page) {
@@ -553,8 +591,10 @@ function sendMessage() {
 
 function checkForNewMessages() {
     setInterval(() => {
-        if (Math.random() < 0.05 && document.getElementById('chatWindow')?.classList.contains('hidden')) {
-            document.getElementById('chatNotify')?.classList.remove('hidden');
+        const chatWindow = document.getElementById('chatWindow');
+        const chatNotify = document.getElementById('chatNotify');
+        if (Math.random() < 0.05 && chatWindow && chatWindow.classList.contains('hidden')) {
+            if (chatNotify) chatNotify.classList.remove('hidden');
             
             currentUser.conversations.push({ type: 'active', time: Date.now() });
             saveUserData();
@@ -575,27 +615,26 @@ function startTimerTracking() {
         if (duration >= 15 && duration % 15 === 0 && duration < 60) {
             if (Math.random() < 0.3) {
                 showChatMessage('heeseung', '你在这个页面待了 ' + duration + ' 分钟了。去喝水。');
-                document.getElementById('chatWindow')?.classList.remove('hidden');
+                const chatWindow = document.getElementById('chatWindow');
+                if (chatWindow) chatWindow.classList.remove('hidden');
             }
         }
     }, 60000);
 }
 
 function showNotification(msg, duration = 3000) {
-    const notif = document.getElementById('notification') || createNotification();
+    let notif = document.getElementById('notification');
+    if (!notif) {
+        notif = document.createElement('div');
+        notif.id = 'notification';
+        notif.className = 'notification hidden';
+        document.body.appendChild(notif);
+    }
     notif.textContent = msg;
     notif.classList.remove('hidden');
     setTimeout(() => {
         notif.classList.add('hidden');
     }, duration);
-}
-
-function createNotification() {
-    const div = document.createElement('div');
-    div.id = 'notification';
-    div.className = 'notification hidden';
-    document.body.appendChild(div);
-    return div;
 }
 
 // 监听来自子页面的消息
