@@ -113,9 +113,32 @@
             font-size: 11px;
         }
 
-        .locked {
-            filter: blur(8px);
-            pointer-events: none;
+        .repair-hint {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            margin-top: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: #ffd966;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .repair-count {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -125,6 +148,11 @@
     </div>
 
     <div id="photoGrid" class="photo-grid"></div>
+    
+    <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+    </div>
+    <div id="repairCount" class="repair-count"></div>
 
     <script>
         const photos = [
@@ -134,25 +162,47 @@
             { id: 4, title: "侧影", emoji: "👤", needRepair: false, repaired: true, description: "拍太久了。有点忘了那天是什么心情。但应该不是不好的心情。" }
         ];
 
+        let repairedCount = 0;
+
         function loadRepairStatus() {
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             if (saved) {
                 const userData = JSON.parse(saved);
+                if (userData.photoRepairedCount !== undefined) {
+                    repairedCount = userData.photoRepairedCount;
+                }
                 if (userData.repairedPhotos) {
                     userData.repairedPhotos.forEach(id => {
                         const photo = photos.find(p => p.id === id);
                         if (photo) photo.repaired = true;
                     });
+                    repairedCount = userData.repairedPhotos.length;
                 }
             }
+            updateProgress();
         }
 
         function saveRepairStatus() {
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             let userData = saved ? JSON.parse(saved) : {};
             const repairedIds = photos.filter(p => p.repaired).map(p => p.id);
             userData.repairedPhotos = repairedIds;
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            userData.photoRepairedCount = repairedCount;
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            
+            // 通知父窗口照片已修复（触发结局检查）
+            if (window.parent && window.parent.repairPhoto) {
+                window.parent.repairPhoto();
+            }
+        }
+
+        function updateProgress() {
+            const total = photos.filter(p => p.needRepair).length;
+            const percent = (repairedCount / total) * 100;
+            const fill = document.getElementById('progressFill');
+            const countEl = document.getElementById('repairCount');
+            if (fill) fill.style.width = percent + '%';
+            if (countEl) countEl.textContent = `已修复 ${repairedCount}/${total} 张照片`;
         }
 
         function repairPhoto(photoId, inputElement, btnElement) {
@@ -161,25 +211,40 @@
 
             const value = inputElement.value.trim();
             if (!value) {
-                alert('请先输入描述');
+                alert('请先描述你记忆中的样子');
+                return;
+            }
+            
+            if (value.length < 2) {
+                alert('请输入更详细的描述（至少2个字）');
                 return;
             }
 
             photo.repaired = true;
+            repairedCount++;
             saveRepairStatus();
             renderPhotoGrid();
 
+            // 显示成功提示
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;color:white;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+            successMsg.textContent = '✅ 照片已修复！';
+            document.body.appendChild(successMsg);
+            setTimeout(() => successMsg.remove(), 2000);
+
             // 记录到用户数据
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             let userData = saved ? JSON.parse(saved) : {};
             if (!userData.photoRepairs) userData.photoRepairs = [];
             userData.photoRepairs.push({ id: photoId, description: value, time: Date.now() });
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
 
             // 触发聊天
             setTimeout(() => {
                 const chatWindow = window.parent.document.getElementById('chatWindow');
-                if (chatWindow) chatWindow.classList.remove('hidden');
+                if (chatWindow && chatWindow.classList.contains('hidden')) {
+                    chatWindow.classList.remove('hidden');
+                }
             }, 500);
         }
 
@@ -195,8 +260,9 @@
                 if (photo.needRepair && !photo.repaired) {
                     repairHtml = `
                         <div class="repair-area">
-                            <input type="text" class="repair-input" id="repairInput${photo.id}" placeholder="${photo.needRepair === true ? '请描述你记忆中的样子...' : '输入内容...'}">
-                            <button class="repair-btn" onclick="repairPhoto(${photo.id}, document.getElementById('repairInput${photo.id}'), this)">修复照片</button>
+                            <input type="text" class="repair-input" id="repairInput${photo.id}" placeholder="请描述你记忆中的样子...">
+                            <button class="repair-btn" onclick="repairPhoto(${photo.id}, document.getElementById('repairInput${photo.id}'), this)">🔧 修复照片</button>
+                            <div class="repair-hint">💡 描述越详细，修复越完整</div>
                         </div>
                     `;
                 } else if (photo.repaired) {
@@ -209,7 +275,7 @@
                     <div class="photo-preview">${photo.emoji}</div>
                     <div class="photo-info">
                         <div class="photo-title">${photo.title}</div>
-                        <div class="photo-desc">${photo.repaired ? '已解锁' : '🔒 需要修复'}</div>
+                        <div class="photo-desc">${photo.repaired ? '✨ 已解锁' : '🔒 需要修复'}</div>
                         ${repairHtml}
                     </div>
                 `;
