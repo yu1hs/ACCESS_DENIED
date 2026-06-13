@@ -13,11 +13,7 @@
             padding: 20px;
             min-height: 100vh;
         }
-        .photo-header {
-            border-bottom: 1px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
+        .photo-header { border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 25px; }
         .photo-header h2 { color: #ffd966; font-size: 20px; }
         .photo-grid {
             display: grid;
@@ -42,11 +38,7 @@
             font-size: 48px;
             overflow: hidden;
         }
-        .photo-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
         .photo-info { padding: 12px; }
         .photo-title { font-size: 14px; color: #ffd966; margin-bottom: 4px; }
         .photo-desc { font-size: 11px; color: #777; margin-bottom: 8px; }
@@ -72,53 +64,35 @@
         }
         .repair-btn:hover { background: #3a6ea5; color: white; }
         .repaired { color: #4ade80; font-size: 11px; }
-        .repair-hint { font-size: 10px; color: #666; margin-top: 5px; }
-        .progress-bar {
-            margin-top: 20px;
-            background: #1a1a1a;
-            border-radius: 10px;
-            height: 6px;
-            overflow: hidden;
-        }
+        .progress-bar { margin-top: 20px; background: #1a1a1a; border-radius: 10px; height: 6px; overflow: hidden; }
         .progress-fill { background: #ffd966; height: 100%; width: 0%; transition: width 0.3s; }
         .repair-count { text-align: center; font-size: 11px; color: #666; margin-top: 8px; }
-        
-        @media (max-width: 600px) {
-            body { padding: 15px; }
-            .photo-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
-        }
+        @media (max-width: 600px) { body { padding: 15px; } .photo-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; } }
     </style>
 </head>
 <body>
     <div class="photo-header">
         <h2>📷 PHOTO ARCHIVE</h2>
     </div>
-
     <div id="photoGrid" class="photo-grid"></div>
-    
-    <div class="progress-bar">
-        <div id="progressFill" class="progress-fill"></div>
-    </div>
+    <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
     <div id="repairCount" class="repair-count"></div>
 
     <script>
-        // 照片数据 - 路径使用 ../ 回到 archive 目录
-        const photos = [
+        let repairedCount = 0;
+        
+        // 照片数据
+        let photos = [
             { id: 1, title: "天空", emoji: "🌅", imagePath: "../assets/images/photo1_sky.jpg", needRepair: true, repaired: false, description: "某天练习完出来看到的。" },
             { id: 2, title: "练习室", emoji: "🪞", imagePath: "../assets/images/photo2_practice.jpg", needRepair: true, repaired: false, description: "那时候每天都在这里。…还在。" },
             { id: 3, title: "便利店", emoji: "🏪", imagePath: "../assets/images/photo3_store.jpg", needRepair: true, repaired: false, description: "两点。很安静。只有自动门开开合合的声音。" },
             { id: 4, title: "侧影", emoji: "👤", imagePath: "../assets/images/photo4_silhouette.jpg", needRepair: false, repaired: true, description: "拍太久了。有点忘了那天是什么心情。" }
         ];
 
-        let repairedCount = 0;
-
         function loadRepairStatus() {
             const saved = localStorage.getItem('hee_archive_dialogue');
             if (saved) {
                 const userData = JSON.parse(saved);
-                if (userData.photoRepairedCount !== undefined) {
-                    repairedCount = userData.photoRepairedCount;
-                }
                 if (userData.repairedPhotos) {
                     userData.repairedPhotos.forEach(id => {
                         const photo = photos.find(p => p.id === id);
@@ -128,6 +102,7 @@
                 }
             }
             updateProgress();
+            renderPhotoGrid();
         }
 
         function saveRepairStatus() {
@@ -137,10 +112,6 @@
             userData.repairedPhotos = repairedIds;
             userData.photoRepairedCount = repairedCount;
             localStorage.setItem('hee_archive_dialogue', JSON.stringify(userData));
-            
-            if (window.parent && window.parent.repairPhoto) {
-                window.parent.repairPhoto();
-            }
         }
 
         function updateProgress() {
@@ -152,7 +123,7 @@
             if (countEl) countEl.textContent = `已修复 ${repairedCount}/${total} 张照片`;
         }
 
-        function repairPhoto(photoId, inputElement, btnElement) {
+        function repairPhoto(photoId, inputElement) {
             const photo = photos.find(p => p.id === photoId);
             if (!photo || photo.repaired) return;
 
@@ -161,43 +132,38 @@
                 alert('请先描述你记忆中的样子');
                 return;
             }
-            
-            if (value.length < 2) {
-                alert('请输入更详细的描述（至少2个字）');
-                return;
-            }
 
+            // 标记为已修复
             photo.repaired = true;
             repairedCount++;
+            
             saveRepairStatus();
-            renderPhotoGrid();
+            updateProgress();
+            renderPhotoGrid();  // 重新渲染页面
 
             const successMsg = document.createElement('div');
             successMsg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;color:white;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
             successMsg.textContent = '✅ 照片已修复！';
             document.body.appendChild(successMsg);
             setTimeout(() => successMsg.remove(), 2000);
-
-            setTimeout(() => {
-                const chatWindow = window.parent.document.getElementById('chatWindow');
-                if (chatWindow && chatWindow.classList.contains('hidden')) {
-                    chatWindow.classList.remove('hidden');
-                }
-            }, 500);
         }
 
         function renderPhotoGrid() {
             const container = document.getElementById('photoGrid');
+            if (!container) return;
             container.innerHTML = '';
 
             photos.forEach(photo => {
                 const card = document.createElement('div');
                 card.className = 'photo-card';
 
+                // 关键：根据 repaired 状态决定显示图片还是 emoji
                 let previewHtml = '';
-                if (photo.repaired && photo.imagePath) {
+                if (photo.repaired === true && photo.imagePath) {
+                    // 已修复：显示图片
                     previewHtml = `<img src="${photo.imagePath}" alt="${photo.title}" onerror="this.parentElement.innerHTML='${photo.emoji}'">`;
                 } else {
+                    // 未修复：显示 emoji
                     previewHtml = photo.emoji;
                 }
 
@@ -206,14 +172,11 @@
                     repairHtml = `
                         <div class="repair-area">
                             <input type="text" class="repair-input" id="repairInput${photo.id}" placeholder="请描述你记忆中的样子...">
-                            <button class="repair-btn" onclick="repairPhoto(${photo.id}, document.getElementById('repairInput${photo.id}'), this)">🔧 修复照片</button>
-                            <div class="repair-hint">💡 描述越详细，修复越完整</div>
+                            <button class="repair-btn" onclick="repairPhoto(${photo.id}, document.getElementById('repairInput${photo.id}'))">🔧 修复照片</button>
                         </div>
                     `;
                 } else if (photo.repaired) {
                     repairHtml = `<div class="repaired">✅ 已修复 · ${photo.description}</div>`;
-                } else if (!photo.needRepair) {
-                    repairHtml = `<div class="repaired">📸 ${photo.description}</div>`;
                 }
 
                 card.innerHTML = `
@@ -229,9 +192,6 @@
         }
 
         loadRepairStatus();
-        renderPhotoGrid();
-
-        window.repairPhoto = repairPhoto;
     </script>
 </body>
 </html>
