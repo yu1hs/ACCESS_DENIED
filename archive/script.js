@@ -1,6 +1,7 @@
 // ==========================================
-// HEE_ARCHIVE - 完整对话故事线
+// HEE_ARCHIVE - 完整对话故事线 + 彩蛋系统
 // 每天有对话选项，推进剧情，第7天触发痕迹结局
+// 支持：图片、音频、响应式、彩蛋
 // ==========================================
 
 let currentUser = {
@@ -19,8 +20,6 @@ let currentUser = {
 };
 
 // ========== 完整故事对话剧本 ==========
-// 每天：问候 → 3个可选对话（每个对话有独特回应）→ 结束语
-
 const storyDialogue = {
     1: {
         greeting: "……你怎么进来的。",
@@ -101,7 +100,14 @@ const pageUnlock = {
 // ========== 音效 ==========
 const SFX = {
     ctx: null,
-    init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} },
+    audioElements: {},
+    
+    init() { 
+        try { 
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+        } catch(e) { console.log('AudioContext not supported'); }
+    },
+    
     play(f, t, d, v = 0.04) {
         if (!this.ctx) return;
         try {
@@ -114,6 +120,17 @@ const SFX = {
             o.start(); o.stop(this.ctx.currentTime + d);
         } catch(e) {}
     },
+    
+    playAudio(url, volume = 0.5) {
+        if (!url) return;
+        try {
+            const audio = new Audio(url);
+            audio.volume = volume;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+            return audio;
+        } catch(e) {}
+    },
+    
     click() { this.play(800, 'sine', 0.04, 0.03); },
     msg() { this.play(380, 'triangle', 0.07, 0.04); },
     unlock() { this.play(523, 'sine', 0.1, 0.05); setTimeout(() => this.play(659, 'sine', 0.1, 0.05), 70); setTimeout(() => this.play(784, 'sine', 0.12, 0.07), 140); },
@@ -122,6 +139,32 @@ const SFX = {
     ending() { [523,587,659,698,784,880,988,1047].forEach((f,i) => setTimeout(() => this.play(f, 'sine', 0.15, 0.07), i * 120)); },
     denied() { this.play(80, 'sawtooth', 0.25, 0.04); }
 };
+
+// ========== 彩蛋函数 ==========
+function showFloatingEmoji(emoji) {
+    const div = document.createElement('div');
+    div.className = 'floating-emoji';
+    div.textContent = emoji;
+    div.style.left = Math.random() * 80 + 10 + '%';
+    div.style.top = '70%';
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 2000);
+}
+
+function showHeartEffect() {
+    for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+            const heart = document.createElement('div');
+            heart.className = 'floating-heart';
+            heart.textContent = '💖';
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.top = '80%';
+            heart.style.fontSize = (Math.random() * 20 + 15) + 'px';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 2000);
+        }, i * 100);
+    }
+}
 
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
@@ -139,8 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
     startAutoSave();
     restoreChatHistory();
 
-    console.log('%c🦌 HEE · 完整对话故事线', 'color: #ffd966; font-size: 14px');
+    console.log('%c🦌 HEE · 完整对话故事线 + 彩蛋', 'color: #ffd966; font-size: 14px');
     console.log(`%c第 ${currentUser.day} 天 · 每天3个对话选项`, 'color: #88aaff; font-size: 12px');
+    console.log('%c彩蛋: 科乐美码 ↑↑↓↓←→←→BA | 输入"heeseung" | 连续点击鹿角 | 手机摇一摇', 'color: #ff66aa; font-size: 10px');
 
     setTimeout(() => {
         showChatWindow();
@@ -163,7 +207,6 @@ function startDayDialogue() {
 }
 
 function showDayOptions(dayData) {
-    // 检查是否已完成当天对话
     if (currentUser.messagesToday >= currentUser.maxMessages) {
         showChatMessage('heeseung', dayData.ending);
         currentUser.dayCompleted = true;
@@ -174,7 +217,6 @@ function showDayOptions(dayData) {
         return;
     }
     
-    // 过滤已选过的选项
     const available = dayData.conversations.filter(opt => 
         !currentUser.selectedOptions.includes(opt.text)
     );
@@ -246,10 +288,10 @@ function shutdownAndAdvance() {
         currentUser.dayCompleted = false;
         currentUser.selectedOptions = [];
         
-        // 解锁页面
         if (pageUnlock[currentUser.day]) {
             currentUser.unlockedPages.push(pageUnlock[currentUser.day]);
             SFX.unlock();
+            showNotification(`🔓 ${pageUnlock[currentUser.day].toUpperCase()} 已解锁！`, 2000);
         }
         
         saveUserData();
@@ -280,6 +322,7 @@ function triggerTrueEnding() {
     currentUser.gameEnded = true;
     saveUserData();
     SFX.ending();
+    showHeartEffect();
     
     const overlay = document.createElement('div');
     overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace;color:#ffd966;text-align:center;`;
@@ -293,7 +336,7 @@ function triggerTrueEnding() {
             而看到痕迹的人，是你。<br><br>
             谢谢你待了那么久。
         </div>
-        <div style="display:flex;gap:15px;justify-content:center;">
+        <div style="display:flex;gap:15px;justify-content:center;flex-wrap:wrap;">
             <button id="restartBtn" style="padding:10px 24px;background:#ff66aa;color:white;border:none;border-radius:30px;cursor:pointer;">💜 重新开始</button>
             <button id="exitBtn" style="padding:10px 24px;background:transparent;border:1px solid #ffd966;color:#ffd966;border-radius:30px;cursor:pointer;">返回桌面</button>
         </div>
@@ -427,15 +470,22 @@ function updateUI() {
         const page = item.getAttribute('data-page');
         if (currentUser.unlockedPages?.includes(page)) {
             item.classList.remove('locked');
+            // 更新图标
+            if (item.innerHTML.includes('🔒')) {
+                item.innerHTML = item.innerHTML.replace('🔒', '📄');
+            }
         }
     });
+    if (currentUser.unlockedPages?.length >= 6) {
+        document.getElementById('userNav')?.classList.remove('hidden');
+    }
     updateStatusBar();
 }
 
 function updateDayDisplay() {
     const el = document.getElementById('dayDisplay') || createDayDisplay();
     const remain = currentUser.maxMessages - currentUser.messagesToday;
-    el.textContent = `📅 第 ${currentUser.day}/7 天 · 剩余对话 ${remain}`;
+    el.textContent = `📅 第 ${currentUser.day}/7 天 · 剩余 ${remain}`;
     el.style.color = remain <= 0 ? '#ff6666' : '#ffd966';
 }
 
@@ -444,7 +494,7 @@ function createDayDisplay() {
     if (footer) {
         const span = document.createElement('span');
         span.id = 'dayDisplay';
-        span.style.cssText = 'margin-left: 16px; font-size: 11px;';
+        span.style.cssText = 'margin-left: 12px; font-size: 11px;';
         footer.appendChild(span);
         return span;
     }
@@ -457,6 +507,16 @@ function updateStatusBar() {
     if (lc) lc.textContent = `访问: ${currentUser.visitCount}`;
     if (ll && currentUser.firstVisit) ll.textContent = `首次: ${new Date(currentUser.firstVisit).toLocaleDateString()}`;
     updateOnlineStatus();
+    updateAchievementDisplay();
+}
+
+function updateAchievementDisplay() {
+    const container = document.getElementById('achievementDisplay');
+    if (container) {
+        const unlocked = currentUser.unlockedPages?.length || 0;
+        const total = 6;
+        container.innerHTML = `🏆 ${unlocked}/${total}`;
+    }
 }
 
 function updateOnlineStatus() {
@@ -472,7 +532,7 @@ function setupListeners() {
         item.addEventListener('click', () => {
             const page = item.getAttribute('data-page');
             const locked = item.classList.contains('locked') && !currentUser.unlockedPages?.includes(page);
-            if (locked && page !== 'trash' && page !== 'home') {
+            if (locked && page !== 'home') {
                 SFX.denied();
                 showAccessDenied(page);
                 return;
@@ -484,14 +544,62 @@ function setupListeners() {
         });
     });
 
+    // 关闭聊天窗口
     document.getElementById('closeChat')?.addEventListener('click', () => {
         document.getElementById('chatWindow').classList.add('hidden');
         document.getElementById('chatNotify').classList.remove('hidden');
     });
 
+    // 聊天通知
     document.getElementById('chatNotify')?.addEventListener('click', () => {
         document.getElementById('chatWindow').classList.remove('hidden');
         document.getElementById('chatNotify').classList.add('hidden');
+    });
+
+    // 最小化窗口
+    document.getElementById('minimizeWindow')?.addEventListener('click', () => {
+        showNotification('📱 程序最小化到任务栏', 1500);
+        setTimeout(() => {
+            window.location.href = '../index.html';
+        }, 500);
+    });
+
+    // 关闭窗口
+    const closeBtn = document.getElementById('closeWindow');
+    const closeDialog = document.getElementById('closeConfirmDialog');
+    const confirmClose = document.getElementById('confirmClose');
+    const cancelClose = document.getElementById('cancelClose');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            closeDialog?.classList.remove('hidden');
+        });
+    }
+    
+    if (confirmClose) {
+        confirmClose.addEventListener('click', () => {
+            showNotification('💾 正在保存记忆...', 1000);
+            setTimeout(() => {
+                window.location.href = '../index.html';
+            }, 800);
+        });
+    }
+    
+    if (cancelClose && closeDialog) {
+        cancelClose.addEventListener('click', () => {
+            closeDialog.classList.add('hidden');
+        });
+        closeDialog?.addEventListener('click', (e) => {
+            if (e.target === closeDialog) closeDialog.classList.add('hidden');
+        });
+    }
+
+    // 返回桌面
+    document.getElementById('backToDesktop')?.addEventListener('click', () => {
+        showNotification('🖥️ 返回桌面...', 800);
+        setTimeout(() => {
+            window.location.href = '../index.html';
+        }, 300);
     });
 }
 
@@ -507,7 +615,7 @@ function showAccessDenied(page) {
                 doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
                     body{background:#0d0d0d;display:flex;align-items:center;justify-content:center;height:100vh;font-family:monospace;flex-direction:column}
                     .icon{font-size:48px;margin-bottom:16px}.msg{font-size:18px;color:#ff4444}
-                </style></head><body><div class="icon">🚫</div><div class="msg">ACCESS DENIED</div><div class="msg" style="font-size:11px;color:#666;">第 ${currentUser.day} 天 · 继续推进剧情</div></body></html>`);
+                </style></head><body><div class="icon">🚫</div><div class="msg">ACCESS DENIED</div><div class="msg" style="font-size:11px;color:#666;">继续推进剧情</div></body></html>`);
                 doc.close();
             }
         } catch(e) {}
@@ -523,7 +631,7 @@ function loadPage(page) {
 function showNotification(msg, dur = 3000) {
     let n = document.getElementById('notification');
     if (!n) { n = document.createElement('div'); n.id = 'notification'; n.className = 'notification hidden'; document.body.appendChild(n); }
-    n.textContent = msg;
+    n.innerHTML = msg;
     n.classList.remove('hidden');
     setTimeout(() => n.classList.add('hidden'), dur);
 }
