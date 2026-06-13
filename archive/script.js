@@ -1,5 +1,7 @@
 // ==========================================
-// HEE_ARCHIVE v3.0 - 完整结局系统 + 痕迹结局触发桌面提示
+// HEE_ARCHIVE v5.0 - 成就系统 + 真结局
+// 成就：夜行者 · 收藏家 · 共鸣者
+// 真结局：痕迹 → 隐藏结局：永远
 // ==========================================
 
 let currentUser = {
@@ -9,7 +11,9 @@ let currentUser = {
     unlockedPages: [],
     conversations: [],
     chatHistory: [],
-    endings: [],
+    achievements: [],      // 存储获得的成就
+    trueEnding: false,     // 是否获得痕迹结局
+    hiddenEnding: false,   // 是否获得隐藏结局
     familiarity: 0,
     day: 1,
     messagesToday: 0,
@@ -27,7 +31,6 @@ let currentUser = {
     comfortLevel: 0,
     curiosityLevel: 0,
     stayLevel: 0,
-    endingsTriggered: [],
     dailyConversations: {},
     trashReadCount: 0,
     gameEnded: false,
@@ -64,13 +67,13 @@ const SFX = {
 
 // ========== 每日配置 ==========
 const dayConfig = {
-    1: { maxMessages: 5, targetFam: 15, unlock: null },
+    1: { maxMessages: 5, targetFam: 15 },
     2: { maxMessages: 6, targetFam: 30, unlock: 'profile' },
     3: { maxMessages: 6, targetFam: 45, unlock: 'photo' },
     4: { maxMessages: 7, targetFam: 60, unlock: 'letters' },
     5: { maxMessages: 7, targetFam: 75, unlock: 'playlog' },
     6: { maxMessages: 8, targetFam: 90, unlock: 'clock' },
-    7: { maxMessages: 8, targetFam: 100, unlock: null }
+    7: { maxMessages: 8, targetFam: 100 }
 };
 
 // ========== 对话树 ==========
@@ -144,6 +147,120 @@ const dialogueTree = {
     }
 };
 
+// ========== 成就检测 ==========
+function checkAchievements() {
+    // 成就1：夜行者
+    const hasNightWalker = currentUser.lateNightCount >= 5 && 
+                           (currentUser.chosenOptions.includes('night_lover') || 
+                            currentUser.chosenOptions.includes('insomnia')) &&
+                           currentUser.familiarity >= 40;
+    
+    // 成就2：收藏家
+    const allPagesUnlocked = ['profile', 'photo', 'letters', 'playlog', 'clock'].every(p => currentUser.unlockedPages.includes(p));
+    const hasCollector = allPagesUnlocked && 
+                         (currentUser.trashReadCount || 0) >= 5 && 
+                         currentUser.viewedPages.includes('log') &&
+                         (currentUser.audioPlayCount || 0) >= 3 &&
+                         (currentUser.photoRepairedCount || 0) >= 2;
+    
+    // 成就3：共鸣者
+    const hasResonator = (currentUser.favClickCount || 0) >= 12 && 
+                         (currentUser.chosenOptions.includes('music_lover') || 
+                          currentUser.chosenOptions.includes('same_taste')) &&
+                         !!currentUser.profileAnswer &&
+                         currentUser.familiarity >= 60;
+    
+    // 记录成就
+    if (hasNightWalker && !currentUser.achievements.includes('night_walker')) {
+        currentUser.achievements.push('night_walker');
+        showAchievementToast('🌙 成就解锁：夜行者', '你总是在深夜来。我们在同一个月亮下面。');
+    }
+    if (hasCollector && !currentUser.achievements.includes('collector')) {
+        currentUser.achievements.push('collector');
+        showAchievementToast('📖 成就解锁：收藏家', '你读完了每一个字。谢谢你看完。');
+    }
+    if (hasResonator && !currentUser.achievements.includes('resonator')) {
+        currentUser.achievements.push('resonator');
+        showAchievementToast('🎵 成就解锁：共鸣者', '你喜欢的和我一样。如果是你，好像也没关系。');
+    }
+    
+    saveUserData();
+    
+    // 检查真结局条件（集齐3个成就 + 第7天 + 亲密度100%）
+    const hasAllAchievements = currentUser.achievements.length >= 3;
+    if (hasAllAchievements && currentUser.day >= 7 && currentUser.familiarity >= 100 && !currentUser.trueEnding) {
+        triggerTrueEnding();
+    }
+}
+
+function showAchievementToast(title, message) {
+    SFX.unlock();
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #1a0a2a, #0a0a0a);
+        border: 2px solid #ffd966;
+        border-radius: 20px;
+        padding: 20px 40px;
+        text-align: center;
+        z-index: 20000;
+        animation: toastFade 3s ease forwards;
+        font-family: monospace;
+        box-shadow: 0 0 30px rgba(255,217,102,0.3);
+    `;
+    toast.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 10px;">🏆</div>
+        <div style="font-size: 16px; color: #ffd966; margin-bottom: 8px;">${title}</div>
+        <div style="font-size: 11px; color: #aaa;">${message}</div>
+    `;
+    document.body.appendChild(toast);
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); visibility: hidden; }
+        }
+    `;
+    document.head.appendChild(style);
+    setTimeout(() => toast.remove(), 3000);
+}
+
+// ========== 真结局触发 ==========
+function triggerTrueEnding() {
+    currentUser.trueEnding = true;
+    currentUser.gameEnded = true;
+    saveUserData();
+    SFX.ending();
+    
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:'Courier New',monospace;color:#ffd966;text-align:center;`;
+    overlay.innerHTML = `
+        <div style="font-size:80px;margin-bottom:30px;">🕯️</div>
+        <div style="font-size:28px;margin-bottom:20px;">真结局 · 痕迹</div>
+        <div style="font-size:13px;line-height:1.8;max-width:400px;margin-bottom:40px;color:#ccc;">
+            你集齐了所有成就。<br>
+            月光下读过他的文字，<br>
+            倾听过他的声音，<br>
+            共鸣过他的喜好。<br><br>
+            他记住了你。<br>
+            回到桌面看看吧。
+        </div>
+        <button id="exitBtn" style="padding:10px 30px;background:#ffd966;color:#0a0a0a;border:none;border-radius:30px;cursor:pointer;">返回桌面</button>
+    `;
+    document.body.appendChild(overlay);
+    
+    document.getElementById('exitBtn')?.addEventListener('click', () => {
+        localStorage.setItem('trace_ending_triggered', 'true');
+        window.location.href = '../index.html';
+    });
+}
+
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
     SFX.init();
@@ -162,7 +279,8 @@ document.addEventListener('DOMContentLoaded', () => {
     restoreChatHistory();
     checkTraceEndingHint();
 
-    console.log('%c🦌 HEE v3.0 · 完整结局系统', 'color: #ffd966; font-size: 14px;');
+    console.log('%c🦌 HEE v5.0 · 成就系统 + 真结局', 'color: #ffd966; font-size: 14px;');
+    console.log('%c成就：夜行者🌙 收藏家📖 共鸣者🎵 → 真结局🕯️', 'color: #888; font-size: 11px;');
 
     setTimeout(() => {
         showChatWindow();
@@ -180,27 +298,27 @@ function showGameEndedScreen() {
     const container = document.querySelector('.container');
     if (container) {
         container.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;background:#0a0a0a;color:#555;font-family:monospace;">
-                <div style="font-size:64px;margin-bottom:20px;">🔒</div>
-                <div style="font-size:18px;margin-bottom:10px;">ACCESS DENIED</div>
-                <div style="font-size:12px;">这个网站已经关闭。</div>
-                <div style="font-size:11px;margin-top:20px;color:#333;">—— 李羲承</div>
-                <button id="backToDesktop" style="margin-top:30px;padding:8px 20px;background:#2a2a2a;border:1px solid #ffd966;color:#ffd966;border-radius:20px;cursor:pointer;">返回桌面</button>
+            <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;background:#0a0a0a;font-family:monospace;text-align:center;">
+                <div style="font-size:64px;margin-bottom:20px;">🦌</div>
+                <div style="font-size:18px;color:#ffd966;margin-bottom:10px;">✦ 故事已完结 ✦</div>
+                <div style="font-size:12px;color:#888;margin-bottom:30px;">你找到了羲承留下的痕迹。</div>
+                <div style="display:flex;gap:15px;">
+                    <button id="restartBtn" style="padding:10px 24px;background:#ff66aa;color:white;border:none;border-radius:30px;cursor:pointer;">💜 重新认识一次吧？</button>
+                    <button id="exitBtn" style="padding:10px 24px;background:transparent;border:1px solid #ffd966;color:#ffd966;border-radius:30px;cursor:pointer;">返回桌面</button>
+                </div>
             </div>
         `;
-        document.getElementById('backToDesktop')?.addEventListener('click', () => {
-            window.location.href = '../index.html';
-        });
+        document.getElementById('restartBtn')?.addEventListener('click', () => restartGame());
+        document.getElementById('exitBtn')?.addEventListener('click', () => window.location.href = '../index.html');
     }
 }
 
 function checkTraceEndingHint() {
-    const hasTraceEnding = currentUser.endings.includes('trace');
-    if (hasTraceEnding && !currentUser.hasShownTraceHint) {
+    if (currentUser.trueEnding && !currentUser.hasShownTraceHint) {
         currentUser.hasShownTraceHint = true;
         saveUserData();
         localStorage.setItem('trace_ending_triggered', 'true');
-        showNotification('✨ 痕迹结局已达成！回到桌面看看吧 ✨', 5000);
+        showNotification('✨ 真结局已达成！回到桌面看看吧 ✨', 5000);
         setTimeout(() => {
             window.location.href = '../index.html';
         }, 3000);
@@ -240,13 +358,14 @@ function trackLateNight() {
 }
 
 function loadUserData() {
-    const saved = localStorage.getItem('hee_archive_v3');
+    const saved = localStorage.getItem('hee_archive_v5');
     if (saved) {
         try { 
             const loaded = JSON.parse(saved);
             currentUser = { ...currentUser, ...loaded };
             if (!currentUser.dailyConversations) currentUser.dailyConversations = {};
             if (!currentUser.chatHistory) currentUser.chatHistory = [];
+            if (!currentUser.achievements) currentUser.achievements = [];
         } catch(e) { resetUser(); }
         currentUser.visitCount++;
     } else {
@@ -255,17 +374,19 @@ function loadUserData() {
     applyDayConfig();
     saveUserData();
     updateStatusBar();
+    updateAchievementDisplay();
 }
 
 function resetUser() {
     currentUser = {
         visitCount: 1, firstVisit: new Date().toISOString(), lastLogin: new Date().toISOString(),
-        unlockedPages: [], conversations: [], chatHistory: [], endings: [], familiarity: 0,
-        day: 1, messagesToday: 0, maxMessages: 5, dayGreetingSent: false,
+        unlockedPages: [], conversations: [], chatHistory: [], achievements: [],
+        trueEnding: false, hiddenEnding: false,
+        familiarity: 0, day: 1, messagesToday: 0, maxMessages: 5, dayGreetingSent: false,
         viewedPages: [], fileTriggers: {}, lateNightCount: 0, pageReadCount: {},
         favClickCount: 0, photoRepairedCount: 0, audioPlayCount: 0, profileAnswer: null,
         chosenOptions: [], comfortLevel: 0, curiosityLevel: 0, stayLevel: 0,
-        endingsTriggered: [], dailyConversations: {}, trashReadCount: 0,
+        dailyConversations: {}, trashReadCount: 0,
         gameEnded: false, hasShownTraceHint: false
     };
 }
@@ -277,7 +398,41 @@ function applyDayConfig() {
 
 function saveUserData() {
     currentUser.lastLogin = new Date().toISOString();
-    try { localStorage.setItem('hee_archive_v3', JSON.stringify(currentUser)); } catch(e) {}
+    try { localStorage.setItem('hee_archive_v5', JSON.stringify(currentUser)); } catch(e) {}
+}
+
+function updateAchievementDisplay() {
+    const container = document.getElementById('achievementDisplay') || createAchievementDisplay();
+    if (container) {
+        const count = currentUser.achievements.length;
+        const icons = { night_walker: '🌙', collector: '📖', resonator: '🎵' };
+        let html = '🏆 ';
+        currentUser.achievements.forEach(a => { html += icons[a] || '⭐'; });
+        if (count === 0) html = '🏆 未获得成就';
+        container.innerHTML = html;
+    }
+}
+
+function createAchievementDisplay() {
+    const footer = document.querySelector('.footer-right');
+    if (footer) {
+        const span = document.createElement('span');
+        span.id = 'achievementDisplay';
+        span.style.cssText = 'margin-left: 16px; font-size: 11px; color: #ffd966;';
+        footer.appendChild(span);
+        return span;
+    }
+    return null;
+}
+
+function applyDayConfig() {
+    const cfg = dayConfig[currentUser.day] || dayConfig[7];
+    currentUser.maxMessages = cfg.maxMessages;
+}
+
+function saveUserData() {
+    currentUser.lastLogin = new Date().toISOString();
+    try { localStorage.setItem('hee_archive_v5', JSON.stringify(currentUser)); } catch(e) {}
 }
 
 function startAutoSave() { setInterval(saveUserData, 30000); }
@@ -286,13 +441,16 @@ function usedTalk() { currentUser.messagesToday++; currentUser.dayGreetingSent =
 
 function shutdownAndAdvance() {
     if (currentUser.day >= 7) {
-        checkAndTriggerAllEndings();
+        checkAchievements();
+        if (!currentUser.trueEnding) {
+            showNotification('⚠️ 第7天结束。未能触发真结局。再试一次吧。', 4000);
+            setTimeout(() => { window.location.href = '../index.html'; }, 2000);
+        }
         return false;
     }
 
     SFX.shutdown();
     const overlay = document.createElement('div');
-    overlay.id = 'shutdownOverlay';
     overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:99999;opacity:0;transition:opacity 1.5s;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:'Courier New',monospace;color:#444;`;
     overlay.innerHTML = `<div style="font-size:24px;margin-bottom:16px;">⬤</div><div style="font-size:12px;">正在关机...</div>`;
     document.body.appendChild(overlay);
@@ -437,66 +595,18 @@ function showShutdownOption() {
     container.appendChild(btn);
 }
 
-function checkAndTriggerAllEndings() {
-    const allPagesUnlocked = ['profile','photo','letters','playlog','clock'].every(p => currentUser.unlockedPages.includes(p));
-    const hasReadTrash = (currentUser.trashReadCount || 0) >= 4;
-    const hasReadLog = currentUser.viewedPages.includes('log');
-    const hasListenedAudio = currentUser.audioPlayCount >= 2;
-    const hasRepairedPhoto = currentUser.photoRepairedCount >= 1;
-    const hasMusicChoice = currentUser.chosenOptions.includes('music_lover') || currentUser.chosenOptions.includes('same_taste');
-    const hasProfile = !!currentUser.profileAnswer;
-    const hasStayChoice = currentUser.chosenOptions.includes('will_stay') || currentUser.chosenOptions.includes('promise');
-    
-    let endingsTriggered = [];
-    if (currentUser.lateNightCount >= 4 && currentUser.chosenOptions.includes('night_lover')) endingsTriggered.push('moonlight');
-    if (allPagesUnlocked && hasReadTrash && hasReadLog && hasListenedAudio && hasRepairedPhoto) endingsTriggered.push('reader');
-    if (currentUser.favClickCount >= 8 && hasMusicChoice && hasProfile) endingsTriggered.push('resonance');
-    if (hasStayChoice && currentUser.familiarity >= 100) endingsTriggered.push('trace');
-    
-    if (endingsTriggered.length > 0) {
-        triggerNormalEnding(endingsTriggered);
-    } else {
-        showNotification('⚠️ 没有触发任何结局。再试试吧。', 3000);
-    }
-}
-
-function triggerNormalEnding(endings) {
-    currentUser.gameEnded = true;
-    if (endings.includes('trace')) {
-        localStorage.setItem('trace_ending_triggered', 'true');
-    }
-    saveUserData();
-    SFX.ending();
-    
-    const endingNames = { moonlight:'🌙 月光', reader:'📖 读者', resonance:'🎵 共鸣', trace:'🕯️ 痕迹' };
-    const endingList = endings.map(e => endingNames[e]).join('、');
-    
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:'Courier New',monospace;color:#ffd966;text-align:center;`;
-    overlay.innerHTML = `
-        <div style="font-size:80px;margin-bottom:30px;">🦌</div>
-        <div style="font-size:28px;margin-bottom:20px;">结局达成</div>
-        <div style="font-size:16px;margin-bottom:40px;color:#ccc;">${endingList}</div>
-        <div style="font-size:13px;line-height:1.8;max-width:400px;margin-bottom:40px;">${getEndingMessage(endings[0])}</div>
-        <div style="font-size:11px;color:#666;">即将返回桌面...</div>
-    `;
-    document.body.appendChild(overlay);
-    
-    setTimeout(() => {
+function restartGame() {
+    if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
+        localStorage.removeItem('hee_archive_v5');
+        localStorage.removeItem('trace_ending_triggered');
+        localStorage.removeItem('secret_ending_triggered');
+        localStorage.removeItem('boot_completed');
+        localStorage.removeItem('secret_revealed');
         window.location.href = '../index.html';
-    }, 4000);
+    }
 }
 
-function getEndingMessage(ending) {
-    const messages = {
-        moonlight: '你总是在深夜来。\n我们在同一个月亮下面。',
-        reader: '你读完了每一个字。\n谢谢你认真看了。',
-        resonance: '你喜欢的和我一样。\n谢谢你觉得我值得被了解。',
-        trace: '你找到的不是一个人的秘密。\n而是一个人愿意留下来的痕迹。\n那个痕迹，是你。'
-    };
-    return messages[ending] || '谢谢你。';
-}
-
+// ========== UI 函数 ==========
 function showChatMessage(sender, content, isSystem = false) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
@@ -671,18 +781,18 @@ function showNotification(msg, dur = 3000) {
     setTimeout(() => n.classList.add('hidden'), dur);
 }
 
+// 外部调用
 window.increaseFavClick = function() { currentUser.favClickCount++; saveUserData(); };
 window.repairPhoto = function() { currentUser.photoRepairedCount++; saveUserData(); };
 window.playAudio = function() { currentUser.audioPlayCount++; saveUserData(); };
 window.saveProfileAnswer = function(answer) { currentUser.profileAnswer = answer; saveUserData(); };
 window.markTrashRead = function(count) { currentUser.trashReadCount = count; saveUserData(); };
+window.restartGame = restartGame;
 
 window.resetGame = () => {
-    localStorage.removeItem('hee_archive_v3');
+    localStorage.removeItem('hee_archive_v5');
     localStorage.removeItem('trace_ending_triggered');
     localStorage.removeItem('secret_ending_triggered');
-    resetUser();
-    saveUserData();
     location.reload();
 };
 console.log('%c输入 resetGame() 重置所有进度', 'color: #888; font-size: 11px;');
