@@ -1,0 +1,319 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'Microsoft YaHei', monospace;
+}
+
+/* 壁纸 */
+.wallpaper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0a 100%);
+    z-index: -1;
+}
+
+/* 桌面图标区域 */
+.desktop-icons {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.desktop-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 85px;
+    padding: 10px 4px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.desktop-icon:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+.icon-folder {
+    font-size: 52px;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.icon-label {
+    color: white;
+    font-size: 11px;
+    text-align: center;
+    text-shadow: 0 1px 3px black;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 8px;
+    border-radius: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 任务栏 */
+.taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    background: rgba(30, 30, 40, 0.95);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+.start-btn {
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.start-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.taskbar-time {
+    color: white;
+    font-size: 12px;
+    margin-left: auto;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.network-status {
+    color: #4ade80;
+    font-size: 11px;
+    background: rgba(0,0,0,0.3);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.deer-icon {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    transition: all 0.2s;
+}
+
+.deer-icon:hover {
+    color: #ffd966;
+    transform: scale(1.05);
+}
+
+/* 右键菜单 */
+.context-menu {
+    position: fixed;
+    background: #2d2d2d;
+    border: 1px solid #555;
+    border-radius: 6px;
+    min-width: 140px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    z-index: 300;
+    overflow: hidden;
+}
+
+.context-menu.hidden {
+    display: none;
+}
+
+.context-item {
+    padding: 8px 16px;
+    color: #e0e0e0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.context-item:hover {
+    background: #3a6ea5;
+    color: white;
+}
+
+/* 对话框 */
+.dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(3px);
+}
+
+.dialog.hidden {
+    display: none;
+}
+
+.dialog-content {
+    background: #2a2a2a;
+    border: 1px solid #5a5a5a;
+    border-radius: 10px;
+    padding: 24px;
+    min-width: 320px;
+    color: #e8e8e8;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-content h3 {
+    margin-bottom: 20px;
+    color: #ffd966;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.prop-row {
+    margin: 10px 0;
+    font-size: 13px;
+    display: flex;
+}
+
+.prop-label {
+    width: 80px;
+    color: #aaa;
+}
+
+.creator-note {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #444;
+    color: #c0a050;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.dialog-buttons {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.dialog-buttons button,
+.dialog-close {
+    padding: 6px 20px;
+    background: #3a3a3a;
+    border: 1px solid #5a5a5a;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.dialog-buttons button:hover,
+.dialog-close:hover {
+    background: #4a6a8a;
+    border-color: #7a9aba;
+}
+
+/* 通知 */
+.notification {
+    position: fixed;
+    bottom: 55px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.92);
+    color: #ffd966;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    border-left: 3px solid #ffd966;
+    z-index: 150;
+    animation: slideIn 0.25s ease;
+    font-family: monospace;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    max-width: 280px;
+}
+
+.notification.hidden {
+    display: none;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* 启动画面 */
+.boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 1s ease;
+}
+
+.boot-screen.fade-out {
+    opacity: 0;
+}
+
+.boot-text {
+    color: #2a8a2a;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    line-height: 2;
+    text-shadow: 0 0 5px #2a8a2a;
+}
+
+.boot-done {
+    margin-top: 20px;
+    color: #4ade80;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+    .desktop-icon {
+        width: 70px;
+    }
+    .icon-folder {
+        font-size: 42px;
+    }
+    .icon-label {
+        font-size: 10px;
+    }
+    .dialog-content {
+        margin: 20px;
+        min-width: auto;
+    }
+}
