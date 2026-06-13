@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRASH - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #ccc;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .trash-header {
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .trash-header h2 {
+            color: #ffd966;
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .trash-header .note {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .file-item {
+            background: #0f0f0f;
+            border: 1px solid #222;
+            border-radius: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .file-item:hover {
+            background: #151515;
+            border-color: #3a6ea5;
+        }
+
+        .file-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+
+        .file-icon {
+            font-size: 20px;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #ddd;
+            font-family: monospace;
+        }
+
+        .file-date {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .file-status {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .file-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid #222;
+            background: #080808;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: #aaa;
+        }
+
+        .file-content.open {
+            display: block;
+        }
+
+        .corrupted {
+            color: #ff6644;
+        }
+
+        .empty-trash {
+            text-align: center;
+            padding: 60px 20px;
+            color: #555;
+        }
+
+        .chat-trigger {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 11px;
+            color: #444;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #222;
+            margin: 20px 0;
+        }
+
+        .restore-note {
+            font-size: 10px;
+            color: #555;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="trash-header">
+        <h2>🗑️ TRASH</h2>
+        <div class="note">已删除的文件 · 可能被永久清除</div>
+    </div>
+
+    <div id="fileList" class="file-list">
+        <!-- 动态加载文件列表 -->
+        <div class="empty-trash">加载中...</div>
+    </div>
+
+    <div class="restore-note">
+        💡 这些是被删除的文件。有些可能无法恢复。
+    </div>
+
+    <div class="chat-trigger" id="chatTrigger">
+        <hr>
+        <span style="cursor:pointer;color:#666;" onclick="triggerChat()">💬 有什么想问的吗</span>
+    </div>
+
+    <script>
+        // TRASH 文件数据
+        const trashFiles = [
+            {
+                id: 1,
+                name: "draft_01.txt",
+                date: "2024-03-15",
+                icon: "📄",
+                content: "今天很累。\n\n想说的话打到一半。\n不想说了。\n\n删掉。",
+                status: "deleted"
+            },
+            {
+                id: 2,
+                name: "note_02.txt",
+                date: "2024-06-22",
+                icon: "📄",
+                content: "想发一条消息。\n\n「最近还好吗」\n\n算了。\n谁会回答。\n\n删掉。",
+                status: "deleted"
+            },
+            {
+                id: 3,
+                name: "memo_03.txt",
+                date: "2024-09-01",
+                icon: "📝",
+                content: "凌晨 02:47\n\n睡不着。\n\n练习室的灯很亮。\n亮得有点刺眼。\n\n但我喜欢。\n因为亮的时候不会想太多。\n\n…写这些干嘛。\n\n删掉。",
+                status: "deleted"
+            },
+            {
+                id: 4,
+                name: "img_04.jpg",
+                date: "2024-10-15",
+                icon: "🖼️",
+                content: null,
+                corrupted: true,
+                status: "corrupted"
+            },
+            {
+                id: 5,
+                name: "unsent_05.txt",
+                date: "2024-11-11",
+                icon: "💌",
+                content: "写给某个人的。\n\n但我不知道你是谁。\n也许不存在。\n\n「今天发生了很好的事」\n「想让你知道」\n\n但不能这样。\n\n删掉。",
+                status: "deleted"
+            },
+            {
+                id: 6,
+                name: "night_06.txt",
+                date: "2024-12-20",
+                icon: "🌙",
+                content: "凌晨 04:12\n\n又失眠了。\n\n今天在想一件事。\n…忘了。\n\n不重要。\n\n删掉。",
+                status: "deleted"
+            }
+        ];
+
+        let openFileId = null;
+
+        function renderFileList() {
+            const container = document.getElementById('fileList');
+            
+            if (!trashFiles.length) {
+                container.innerHTML = '<div class="empty-trash">回收站是空的。</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            trashFiles.forEach(file => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-item';
+                fileDiv.onclick = () => toggleFile(file.id);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'file-content';
+                contentDiv.id = `file-content-${file.id}`;
+
+                if (file.corrupted) {
+                    contentDiv.innerHTML = `
+                        <span class="corrupted">⚠️ 文件已损坏，无法查看。</span><br>
+                        <span style="font-size:11px;color:#555;">文件名: ${file.name}</span><br>
+                        <span style="font-size:11px;color:#444;">尝试修复...失败。原文件已被覆盖。</span>
+                    `;
+                } else if (file.content) {
+                    contentDiv.innerHTML = file.content.replace(/\n/g, '<br>');
+                } else {
+                    contentDiv.innerHTML = '<span style="color:#555;">文件内容为空。</span>';
+                }
+
+                fileDiv.innerHTML = `
+                    <div class="file-header">
+                        <div class="file-icon">${file.icon}</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-date">${file.date}</div>
+                        </div>
+                        <div class="file-status">${file.corrupted ? '⚠️ 损坏' : '🗑️ 已删除'}</div>
+                    </div>
+                `;
+                
+                fileDiv.appendChild(contentDiv);
+                container.appendChild(fileDiv);
+            });
+        }
+
+        function toggleFile(fileId) {
+            const content = document.getElementById(`file-content-${fileId}`);
+            if (content) {
+                content.classList.toggle('open');
+            }
+            
+            // 记录查看行为，触发聊天
+            if (openFileId !== fileId) {
+                checkTrashInteraction();
+            }
+            openFileId = fileId === openFileId ? null : fileId;
+        }
+
+        let trashInteracted = false;
+
+        function checkTrashInteraction() {
+            if (!trashInteracted) {
+                trashInteracted = true;
+                // 触发聊天（通过 parent 窗口）
+                if (window.parent && window.parent.triggerFirstChat) {
+                    // 如果聊天还没开始，触发
+                }
+                // 显示通知
+                console.log('用户查看了回收站内容');
+            }
+        }
+
+        // 触发聊天（通过消息框）
+        function triggerChat() {
+            // 尝试显示聊天窗口
+            const chatWindow = window.parent.document.getElementById('chatWindow');
+            if (chatWindow) {
+                chatWindow.classList.remove('hidden');
+            }
+        }
+
+        // 初始化
+        renderFileList();
+
+        // 控制台彩蛋
+        console.log('%c🗑️ 这些是被删除的东西。有些连我自己都忘了写过。', 'color: #888;');
+    </script>
+</body>
+</html>
