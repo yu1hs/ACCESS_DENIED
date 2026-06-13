@@ -102,18 +102,17 @@
     <div id="repairCount" class="repair-count"></div>
 
     <script>
-        // 照片数据 - 图片路径（小写.jpg）
+        // 照片数据 - 路径使用 ../ 回到 archive 目录
         const photos = [
-            { id: 1, title: "天空", emoji: "🌅", imagePath: "assets/images/photo1_sky.jpg", needRepair: true, repaired: false, description: "某天练习完出来看到的。" },
-            { id: 2, title: "练习室", emoji: "🪞", imagePath: "assets/images/photo2_practice.jpg", needRepair: true, repaired: false, description: "那时候每天都在这里。…还在。" },
-            { id: 3, title: "便利店", emoji: "🏪", imagePath: "assets/images/photo3_store.jpg", needRepair: true, repaired: false, description: "两点。很安静。只有自动门开开合合的声音。" },
-            { id: 4, title: "侧影", emoji: "👤", imagePath: "assets/images/photo4_silhouette.jpg", needRepair: false, repaired: true, description: "拍太久了。有点忘了那天是什么心情。" }
+            { id: 1, title: "天空", emoji: "🌅", imagePath: "../assets/images/photo1_sky.jpg", needRepair: true, repaired: false, description: "某天练习完出来看到的。" },
+            { id: 2, title: "练习室", emoji: "🪞", imagePath: "../assets/images/photo2_practice.jpg", needRepair: true, repaired: false, description: "那时候每天都在这里。…还在。" },
+            { id: 3, title: "便利店", emoji: "🏪", imagePath: "../assets/images/photo3_store.jpg", needRepair: true, repaired: false, description: "两点。很安静。只有自动门开开合合的声音。" },
+            { id: 4, title: "侧影", emoji: "👤", imagePath: "../assets/images/photo4_silhouette.jpg", needRepair: false, repaired: true, description: "拍太久了。有点忘了那天是什么心情。" }
         ];
 
         let repairedCount = 0;
 
         function loadRepairStatus() {
-            // 使用和主游戏相同的 storage key
             const saved = localStorage.getItem('hee_archive_dialogue');
             if (saved) {
                 const userData = JSON.parse(saved);
@@ -195,7 +194,6 @@
                 const card = document.createElement('div');
                 card.className = 'photo-card';
 
-                // 预览区域：已修复且有图片时显示图片，否则显示emoji
                 let previewHtml = '';
                 if (photo.repaired && photo.imagePath) {
                     previewHtml = `<img src="${photo.imagePath}" alt="${photo.title}" onerror="this.parentElement.innerHTML='${photo.emoji}'">`;
