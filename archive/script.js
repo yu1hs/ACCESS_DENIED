@@ -1,7 +1,6 @@
 // ==========================================
-// HEE_ARCHIVE v3.0 - 7天进程 + 四结局系统（修复版）
-// 结局基于：对话选择 + 资料收集 + 玩家倾向
-// 修复：第四天对话卡住问题
+// HEE_ARCHIVE v3.0 - 7天进程系统（完整修复版）
+// 修复：第四天卡住、关机推进、每日重置
 // ==========================================
 
 // ========== 全局状态 ==========
@@ -30,9 +29,8 @@ let currentUser = {
     curiosityLevel: 0,
     stayLevel: 0,
     endingsTriggered: [],
-    openedLetters: [],
-    trashReadCount: 0,
-    trashReadIds: []
+    // 每日对话记录（用于防止重复）
+    dailyConversations: {}
 };
 
 let startTime = Date.now();
@@ -69,13 +67,13 @@ const dayConfig = {
     1: { maxMessages: 5, targetFam: 15, unlock: null },
     2: { maxMessages: 6, targetFam: 30, unlock: 'profile' },
     3: { maxMessages: 6, targetFam: 45, unlock: 'photo' },
-    4: { maxMessages: 7, targetFam: 60, unlock: 'audio' },
-    5: { maxMessages: 7, targetFam: 75, unlock: 'log' },
-    6: { maxMessages: 8, targetFam: 90, unlock: 'favorites' },
+    4: { maxMessages: 7, targetFam: 60, unlock: 'letters' },
+    5: { maxMessages: 7, targetFam: 75, unlock: 'playlog' },
+    6: { maxMessages: 8, targetFam: 90, unlock: 'clock' },
     7: { maxMessages: 8, targetFam: 100, unlock: null }
 };
 
-// ========== 每日对话树 ==========
+// ========== 对话树 ==========
 const dialogueTree = {
     1: {
         greeting: "……你怎么进来的。",
@@ -133,8 +131,7 @@ const dialogueTree = {
             { question: "你重要吗？", answer: "对你来说……重要吗。", fam: 10, tendency: 'stay' },
             { question: "你害怕失去什么？", answer: "害怕失去……你。", fam: 12, tendency: 'stay', optionKey: 'fear_lose' },
             { question: "你愿意相信我吗？", answer: "愿意。虽然害怕。", fam: 10, tendency: 'stay', optionKey: 'trust' },
-            { question: "你喜欢什么音乐？", answer: "安静的。凌晨听的那种。", fam: 8, tendency: 'music', optionKey: 'music_lover' },
-            { question: "我们喜欢的东西好像差不多", answer: "是吗。那……挺好的。", fam: 10, tendency: 'music', optionKey: 'same_taste' }
+            { question: "你喜欢什么？", answer: "安静。夜晚。还有……你。", fam: 12, tendency: 'stay' }
         ]
     },
     7: {
@@ -148,75 +145,6 @@ const dialogueTree = {
     }
 };
 
-// ========== 结局条件检查 ==========
-function checkEndings() {
-    const hour = new Date().getHours();
-    const isLateNight = hour >= 0 && hour <= 5;
-    if (isLateNight) currentUser.lateNightCount++;
-    
-    const chatCount = currentUser.conversations.filter(c => c.question).length;
-    const hasMoonlightChoice = currentUser.chosenOptions.includes('night_lover') || currentUser.chosenOptions.includes('insomnia');
-    
-    if (currentUser.lateNightCount >= 4 && hasMoonlightChoice && !currentUser.endings.includes('moonlight')) {
-        triggerEnding('moonlight');
-    }
-    
-    const allPagesUnlocked = ['profile','photo','audio','log','favorites'].every(p => currentUser.unlockedPages.includes(p));
-    const hasReadTrash = (currentUser.trashReadCount || 0) >= 4;
-    const hasReadLog = currentUser.viewedPages.includes('log');
-    const hasListenedAudio = currentUser.audioPlayCount >= 2;
-    const hasRepairedPhoto = currentUser.photoRepairedCount >= 1;
-    
-    if (allPagesUnlocked && hasReadTrash && hasReadLog && hasListenedAudio && hasRepairedPhoto && !currentUser.endings.includes('reader')) {
-        triggerEnding('reader');
-    }
-    
-    const hasMusicChoice = currentUser.chosenOptions.includes('music_lover') || currentUser.chosenOptions.includes('same_taste');
-    const hasProfile = !!currentUser.profileAnswer;
-    
-    if (currentUser.favClickCount >= 8 && hasMusicChoice && hasProfile && !currentUser.endings.includes('resonance')) {
-        triggerEnding('resonance');
-    }
-    
-    const hasStayChoice = currentUser.chosenOptions.includes('will_stay') || currentUser.chosenOptions.includes('promise');
-    
-    if (hasStayChoice && currentUser.familiarity >= 100 && currentUser.day >= 7 && !currentUser.endings.includes('trace')) {
-        triggerEnding('trace');
-    }
-}
-
-function triggerEnding(type) {
-    if (currentUser.endings.includes(type)) return;
-    
-    const endings = {
-        moonlight: { title: '🌙 月光', message: '你总是在深夜来。我也是。我们在同一个月亮下面。', dialog: '你每次都这么晚。\n\n凌晨的时候，想法会比较真实。\n谢谢你在这些时间里来这边。' },
-        reader: { title: '📖 读者', message: '你读完了每一个字。谢谢你看完。', dialog: '你都看完了。\n\n很少有人会这样。\n谢谢你不是谢谢你来这里。是谢谢你认真看了。' },
-        resonance: { title: '🎵 共鸣', message: '你喜欢的和我一样吗。如果是你，好像也没关系。', dialog: '你点了很多次。\n\n我在想你是不是和我喜欢一样的东西。\n如果是你...好像也没关系。' },
-        trace: { title: '🕯️ 痕迹', message: '你找到的不是一个人的秘密。而是一个人愿意留下来的痕迹。', dialog: '你找到了。\n不是一个人的秘密。\n是一个人愿意留下来的痕迹。' }
-    };
-    
-    const ending = endings[type];
-    currentUser.endings.push(type);
-    saveUserData();
-    SFX.ending();
-    
-    showChatMessage('system', `✨ 结局解锁：${ending.title} ✨`, true);
-    showChatMessage('heeseung', ending.dialog);
-    
-    if (type === 'trace') {
-        setTimeout(() => {
-            showChatMessage('heeseung', '谢谢。不是谢谢你来这里。是谢谢你待了那么久。');
-        }, 2000);
-        setTimeout(() => {
-            showChatMessage('system', '🦌 感谢你的陪伴。\n—— Lee Heeseung', true);
-        }, 4000);
-    }
-    
-    if (!currentUser.endingsTriggered) currentUser.endingsTriggered = [];
-    currentUser.endingsTriggered.push(type);
-    saveUserData();
-}
-
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
     SFX.init();
@@ -225,9 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupListeners();
     updateDayDisplay();
     startAutoSave();
+    trackLateNight();
 
-    console.log('%c🦌 HEE v3.0 · 7天进程 + 四结局（修复版）', 'color: #ffd966; font-size: 14px;');
-    console.log('%c🌙月光 📖读者 🎵共鸣 🕯️痕迹', 'color: #888; font-size: 11px;');
+    console.log('%c🦌 HEE v3.0 · 7天进程（完整修复版）', 'color: #ffd966; font-size: 14px;');
+    console.log('%c每天对话结束后点击「关机」推进到下一天', 'color: #888; font-size: 11px;');
 
     setTimeout(() => {
         showChatWindow();
@@ -235,11 +164,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
 });
 
+// 追踪深夜访问
+function trackLateNight() {
+    const hour = new Date().getHours();
+    if (hour >= 0 && hour <= 5) {
+        currentUser.lateNightCount++;
+        saveUserData();
+    }
+}
+
 // ========== 存储 ==========
 function loadUserData() {
     const saved = localStorage.getItem('hee_archive_v3');
     if (saved) {
-        try { currentUser = JSON.parse(saved); } catch(e) { resetUser(); }
+        try { 
+            currentUser = JSON.parse(saved);
+            // 确保每日对话记录存在
+            if (!currentUser.dailyConversations) currentUser.dailyConversations = {};
+        } catch(e) { resetUser(); }
         currentUser.visitCount++;
     } else {
         resetUser();
@@ -275,9 +217,7 @@ function resetUser() {
         curiosityLevel: 0,
         stayLevel: 0,
         endingsTriggered: [],
-        openedLetters: [],
-        trashReadCount: 0,
-        trashReadIds: []
+        dailyConversations: {}
     };
 }
 
@@ -293,7 +233,9 @@ function saveUserData() {
 
 function startAutoSave() { setInterval(saveUserData, 30000); }
 
-function canTalk() { return currentUser.messagesToday < currentUser.maxMessages; }
+function canTalk() { 
+    return currentUser.messagesToday < currentUser.maxMessages; 
+}
 
 function usedTalk() {
     currentUser.messagesToday++;
@@ -302,7 +244,7 @@ function usedTalk() {
     updateDayDisplay();
 }
 
-// ========== 关机推进 ==========
+// ========== 关机推进系统（完整修复版）==========
 function shutdownAndAdvance() {
     if (currentUser.day >= 7) {
         showNotification('✨ 第七天已经结束。感谢你的陪伴。', 3000);
@@ -322,14 +264,15 @@ function shutdownAndAdvance() {
         currentUser.day++;
         currentUser.messagesToday = 0;
         currentUser.dayGreetingSent = false;
+        currentUser.dailyConversations = {};  // 重置每日对话记录
         applyDayConfig();
         
+        // 解锁该天对应的页面
         const cfg = dayConfig[currentUser.day];
         if (cfg && cfg.unlock && !currentUser.unlockedPages.includes(cfg.unlock)) {
             currentUser.unlockedPages.push(cfg.unlock);
             currentUser.fileTriggers[cfg.unlock] = true;
             SFX.unlock();
-            showChatMessage('system', `🔓 ${cfg.unlock.toUpperCase()} 已解锁！`, true);
         }
         
         saveUserData();
@@ -340,13 +283,18 @@ function shutdownAndAdvance() {
             setTimeout(() => {
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 1500);
+                
+                // 清空聊天记录
                 const msgs = document.getElementById('chatMessages');
                 const opts = document.getElementById('chatOptions');
-                if (msgs) msgs.innerHTML = '';
+                if (msgs) msgs.innerHTML = '<div class="chat-system">对话已建立连接...</div>';
                 if (opts) opts.innerHTML = '';
+                
                 showChatWindow();
                 updateDayDisplay();
                 updateUI();
+                
+                // 触发新一天对话
                 setTimeout(() => triggerDayStart(), 1000);
             }, 2000);
         }, 800);
@@ -359,17 +307,7 @@ function getDayLabel() {
     return labels[currentUser.day] || `第 ${currentUser.day} 天`;
 }
 
-// ========== 对话系统 ==========
-function handleTendency(tendency, optionKey) {
-    if (tendency === 'comfort') currentUser.comfortLevel++;
-    if (tendency === 'curiosity') currentUser.curiosityLevel++;
-    if (tendency === 'stay') currentUser.stayLevel++;
-    if (optionKey && !currentUser.chosenOptions.includes(optionKey)) {
-        currentUser.chosenOptions.push(optionKey);
-    }
-    saveUserData();
-}
-
+// ========== 每日开始对话 ==========
 function triggerDayStart() {
     if (currentUser.dayGreetingSent) return;
     if (!canTalk()) return;
@@ -384,29 +322,39 @@ function triggerDayStart() {
     }, 1200);
 }
 
+function handleTendency(tendency, optionKey) {
+    if (tendency === 'comfort') currentUser.comfortLevel++;
+    if (tendency === 'curiosity') currentUser.curiosityLevel++;
+    if (tendency === 'stay') currentUser.stayLevel++;
+    if (optionKey && !currentUser.chosenOptions.includes(optionKey)) {
+        currentUser.chosenOptions.push(optionKey);
+    }
+    saveUserData();
+}
+
+// ========== 每日对话选项（修复版）==========
 function showDailyOptions() {
-    // 检查是否还能对话
     if (!canTalk()) {
-        showChatMessage('system', '⏳ 今天聊了很多了。关机休息吧，明天再来。', true);
+        showChatMessage('system', '⏳ 今天聊了很多了。点击「关机」推进到下一天吧。', true);
         showShutdownOption();
         return;
     }
     
     const dayData = dialogueTree[currentUser.day] || dialogueTree[7];
-    
-    // 安全检查：如果没有对话数据
-    if (!dayData || !dayData.conversations) {
+    if (!dayData || !dayData.conversations || dayData.conversations.length === 0) {
         showChatMessage('heeseung', '……今天就到这里吧。');
         setTimeout(() => showShutdownOption(), 1000);
         return;
     }
     
     // 获取今天还没有聊过的话题
+    const dayKey = `day_${currentUser.day}`;
+    const talkedQuestions = currentUser.dailyConversations[dayKey] || [];
+    
     const remaining = dayData.conversations.filter(c => 
-        !currentUser.conversations.some(conv => conv.question === c.question && conv.day === currentUser.day)
+        !talkedQuestions.includes(c.question)
     );
     
-    // 如果没有剩余话题，结束今天的对话
     if (remaining.length === 0) {
         showChatMessage('heeseung', '……今天就到这里吧。');
         setTimeout(() => showShutdownOption(), 1000);
@@ -429,6 +377,12 @@ function showDailyOptions() {
             SFX.click();
             showChatMessage('user', conv.question);
             
+            // 记录已聊话题
+            if (!currentUser.dailyConversations[dayKey]) {
+                currentUser.dailyConversations[dayKey] = [];
+            }
+            currentUser.dailyConversations[dayKey].push(conv.question);
+            
             handleTendency(conv.tendency, conv.optionKey);
             
             setTimeout(() => {
@@ -446,6 +400,7 @@ function showDailyOptions() {
                 });
                 saveUserData();
                 checkEndings();
+                // 继续显示下一轮选项
                 setTimeout(() => showDailyOptions(), 800);
             }, 800);
         }
@@ -499,7 +454,6 @@ function increaseFamiliarity(amount) {
     currentUser.familiarity = Math.min(100, (currentUser.familiarity || 0) + amount);
     saveUserData();
     updateFamiliarityDisplay();
-    checkEndings();
 }
 
 function showShutdownOption() {
@@ -518,6 +472,67 @@ function showShutdownOption() {
         shutdownAndAdvance();
     });
     container.appendChild(btn);
+}
+
+// ========== 结局系统 ==========
+function checkEndings() {
+    const chatCount = currentUser.conversations.length;
+    const allPagesUnlocked = ['profile','photo','letters','playlog','clock'].every(p => currentUser.unlockedPages.includes(p));
+    const hasReadTrash = (currentUser.trashReadCount || 0) >= 4;
+    const hasReadLog = currentUser.viewedPages.includes('log');
+    const hasListenedAudio = currentUser.audioPlayCount >= 2;
+    const hasRepairedPhoto = currentUser.photoRepairedCount >= 1;
+    const hasMusicChoice = currentUser.chosenOptions.includes('music_lover') || currentUser.chosenOptions.includes('same_taste');
+    const hasProfile = !!currentUser.profileAnswer;
+    const hasStayChoice = currentUser.chosenOptions.includes('will_stay') || currentUser.chosenOptions.includes('promise');
+    
+    // 月光
+    if (currentUser.lateNightCount >= 4 && currentUser.chosenOptions.includes('night_lover') && !currentUser.endings.includes('moonlight')) {
+        triggerEnding('moonlight');
+    }
+    
+    // 读者
+    if (allPagesUnlocked && hasReadTrash && hasReadLog && hasListenedAudio && hasRepairedPhoto && !currentUser.endings.includes('reader')) {
+        triggerEnding('reader');
+    }
+    
+    // 共鸣
+    if (currentUser.favClickCount >= 8 && hasMusicChoice && hasProfile && !currentUser.endings.includes('resonance')) {
+        triggerEnding('resonance');
+    }
+    
+    // 痕迹
+    if (hasStayChoice && currentUser.familiarity >= 100 && currentUser.day >= 7 && !currentUser.endings.includes('trace')) {
+        triggerEnding('trace');
+    }
+}
+
+function triggerEnding(type) {
+    if (currentUser.endings.includes(type)) return;
+    
+    const endings = {
+        moonlight: { title: '🌙 月光', message: '你总是在深夜来。我也是。我们在同一个月亮下面。', dialog: '你每次都这么晚。\n\n凌晨的时候，想法会比较真实。\n谢谢你在这些时间里来这边。' },
+        reader: { title: '📖 读者', message: '你读完了每一个字。谢谢你看完。', dialog: '你都看完了。\n\n很少有人会这样。\n谢谢你不是谢谢你来这里。是谢谢你认真看了。' },
+        resonance: { title: '🎵 共鸣', message: '你喜欢的和我一样吗。如果是你，好像也没关系。', dialog: '你点了很多次。\n\n我在想你是不是和我喜欢一样的东西。\n如果是你...好像也没关系。' },
+        trace: { title: '🕯️ 痕迹', message: '你找到的不是一个人的秘密。而是一个人愿意留下来的痕迹。', dialog: '你找到了。\n不是一个人的秘密。\n是一个人愿意留下来的痕迹。' }
+    };
+    
+    const ending = endings[type];
+    currentUser.endings.push(type);
+    saveUserData();
+    SFX.ending();
+    
+    showChatMessage('system', `✨ 结局解锁：${ending.title} ✨`, true);
+    showChatMessage('heeseung', ending.dialog);
+    
+    if (type === 'trace') {
+        setTimeout(() => {
+            showChatMessage('heeseung', '谢谢。不是谢谢你来这里。是谢谢你待了那么久。');
+        }, 2000);
+        setTimeout(() => {
+            showChatMessage('system', '🦌 感谢你的陪伴。\n—— Lee Heeseung', true);
+        }, 4000);
+    }
 }
 
 // ========== UI 函数 ==========
@@ -597,30 +612,6 @@ function updateStatusBar() {
     if (ll && currentUser.firstVisit) ll.textContent = `首次: ${new Date(currentUser.firstVisit).toLocaleDateString()}`;
     updateFamiliarityDisplay();
     updateOnlineStatus();
-    
-    if (currentUser.endings.length > 0) {
-        const endingsStr = currentUser.endings.map(e => {
-            if (e === 'moonlight') return '🌙';
-            if (e === 'reader') return '📖';
-            if (e === 'resonance') return '🎵';
-            if (e === 'trace') return '🕯️';
-            return '';
-        }).join(' ');
-        const endingsEl = document.getElementById('endingsDisplay') || createEndingsDisplay();
-        if (endingsEl) endingsEl.textContent = `🏆 ${endingsStr}`;
-    }
-}
-
-function createEndingsDisplay() {
-    const footer = document.querySelector('.footer-right');
-    if (footer) {
-        const span = document.createElement('span');
-        span.id = 'endingsDisplay';
-        span.style.cssText = 'margin-left: 16px; font-size: 11px; color: #ffd966;';
-        footer.appendChild(span);
-        return span;
-    }
-    return null;
 }
 
 function updateFamiliarityDisplay() {
@@ -667,14 +658,11 @@ function setupListeners() {
             item.classList.add('active');
             loadPage(page);
             
-            if (!currentUser.viewedPages.includes(page) && page !== 'home') {
+            if (!currentUser.viewedPages.includes(page)) {
                 currentUser.viewedPages.push(page);
                 saveUserData();
                 checkEndings();
             }
-            if (!currentUser.pageReadCount[page]) currentUser.pageReadCount[page] = 0;
-            currentUser.pageReadCount[page]++;
-            saveUserData();
         });
         item.addEventListener('mouseenter', () => SFX.hover());
     });
@@ -734,7 +722,7 @@ function showNotification(msg, dur = 3000) {
     setTimeout(() => n.classList.add('hidden'), dur);
 }
 
-// ========== 供其他页面调用的函数 ==========
+// ========== 外部调用 ==========
 window.increaseFavClick = function() {
     currentUser.favClickCount++;
     saveUserData();
@@ -763,10 +751,6 @@ window.markTrashRead = function(count) {
     currentUser.trashReadCount = count;
     saveUserData();
     checkEndings();
-};
-
-window.increaseFamiliarity = function(amount) {
-    increaseFamiliarity(amount);
 };
 
 // ========== 调试 ==========
