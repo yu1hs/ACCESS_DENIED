@@ -21,45 +21,173 @@
             70% { transform: translate(0); }
             100% { transform: translate(0); }
         }
-        .glitch-effect {
-            animation: glitch 0.3s ease-in-out;
-        }
+        .glitch-effect { animation: glitch 0.3s ease-in-out; }
+        
         @keyframes heartBeat {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
+            50% { transform: scale(1.02); }
         }
-        .heart-beat {
-            animation: heartBeat 0.5s ease-in-out;
+        .heart-beat { animation: heartBeat 0.5s ease-in-out; }
+        
+        @keyframes floatHeart {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
         }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        @keyframes fadeInModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        .shake {
-            animation: shake 0.3s ease-in-out;
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
         
-        /* 手机摇一摇提示 */
-        .shake-toast {
+        /* 手机虚拟键盘按钮 */
+        .virtual-keyboard {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
+            bottom: 60px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .virtual-key-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(30,30,40,0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid #ffd966;
+            border-radius: 25px;
             color: #ffd966;
-            padding: 12px 24px;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .virtual-key-btn:hover, .virtual-key-btn:active {
+            background: #3a6ea5;
+            transform: scale(1.05);
+        }
+        .virtual-keyboard .close-btn {
+            background: rgba(50,50,60,0.95);
+            border-color: #888;
+            color: #888;
+            font-size: 16px;
+        }
+        
+        /* 手机专用彩蛋按钮 */
+        .mobile-easter-btn {
+            position: fixed;
+            bottom: 120px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,102,170,0.8);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 触摸涟漪效果 */
+        .ripple {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255,217,102,0.4);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+            z-index: 10000;
+        }
+        @keyframes ripple {
+            to { transform: scale(4); opacity: 0; }
+        }
+        
+        /* Heeseung 彩蛋全屏界面 */
+        .heeseung-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a0a2a, #0a0a0a);
+            z-index: 30000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            animation: fadeInModal 0.5s ease;
+        }
+        .heeseung-card {
+            background: rgba(20,20,30,0.95);
+            border: 2px solid #ffd966;
+            border-radius: 32px;
+            padding: 40px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255,217,102,0.3);
+            animation: scaleIn 0.4s ease;
+        }
+        .heeseung-avatar {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .heeseung-name {
+            font-size: 28px;
+            color: #ffd966;
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+        .heeseung-dialogue {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #ddd;
+            margin: 20px 0;
+        }
+        .heeseung-btn {
+            margin-top: 30px;
+            padding: 10px 30px;
+            background: #ffd966;
+            color: #0a0a0a;
+            border: none;
             border-radius: 30px;
             font-size: 14px;
-            z-index: 10000;
-            animation: fadeOut 2s forwards;
-            font-family: monospace;
-            white-space: nowrap;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        @keyframes fadeOut {
-            0% { opacity: 1; }
-            70% { opacity: 1; }
-            100% { opacity: 0; visibility: hidden; }
+        .heeseung-btn:hover {
+            transform: scale(1.02);
+            background: #ffcc44;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-easter-btn { display: flex; }
+            .virtual-keyboard { bottom: 100px; right: 10px; }
+            .virtual-key-btn { width: 45px; height: 45px; font-size: 18px; }
+            .heeseung-card { margin: 20px; padding: 30px; }
+            .heeseung-name { font-size: 22px; }
+            .heeseung-dialogue { font-size: 14px; }
+        }
+        
+        @media (hover: none) and (pointer: coarse) {
+            .desktop-icon { padding: 12px 4px; }
+            .context-item { padding: 12px 16px; font-size: 14px; }
         }
     </style>
 </head>
@@ -92,6 +220,22 @@
         <div class="deer-icon" id="deerIcon">🦌</div>
     </div>
 
+    <!-- 手机虚拟键盘（隐藏/显示） -->
+    <div id="virtualKeyboard" class="virtual-keyboard" style="display: none;">
+        <div class="virtual-key-btn" data-key="h">H</div>
+        <div class="virtual-key-btn" data-key="e">E</div>
+        <div class="virtual-key-btn" data-key="e2">E</div>
+        <div class="virtual-key-btn" data-key="s">S</div>
+        <div class="virtual-key-btn" data-key="e3">E</div>
+        <div class="virtual-key-btn" data-key="u">U</div>
+        <div class="virtual-key-btn" data-key="n">N</div>
+        <div class="virtual-key-btn" data-key="g">G</div>
+        <div class="virtual-key-btn close-btn" id="closeKeyboard">✕</div>
+    </div>
+
+    <!-- 手机彩蛋按钮 -->
+    <div id="mobileEasterBtn" class="mobile-easter-btn">✨</div>
+
     <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu hidden">
         <div class="context-item" id="menuDelete">删除</div>
@@ -113,7 +257,6 @@
         </div>
     </div>
 
-    <!-- 删除对话框 -->
     <div id="deleteDialog" class="dialog hidden">
         <div class="dialog-content">
             <p id="deleteMessage">确定要删除此文件夹吗？</p>
@@ -124,7 +267,6 @@
         </div>
     </div>
 
-    <!-- 属性对话框 -->
     <div id="propertiesDialog" class="dialog hidden">
         <div class="dialog-content">
             <h3>📁 HEE 属性</h3>
@@ -139,10 +281,7 @@
         </div>
     </div>
 
-    <!-- 通知 -->
     <div id="notification" class="notification hidden"></div>
-
-    <!-- 启动画面 -->
     <div id="bootScreen" class="boot-screen">
         <div class="boot-text">
             <div>Booting...</div>
@@ -152,10 +291,8 @@
         </div>
     </div>
 
-    <!-- 桌面重新开始按钮 -->
     <button id="desktopRestartBtn" class="desktop-restart-btn">💜 重新认识一次吧？</button>
 
-    <!-- 依赖度条 -->
     <div id="dependencyBar" class="dependency-bar-container" style="display:none;">
         <div class="dependency-label">
             <span>💜 依赖度</span>
@@ -165,18 +302,68 @@
     </div>
 
     <script>
+        // ========== 检测设备类型 ==========
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
         // ========== 变量定义 ==========
         let deleteAttempts = 0;
         let notificationTimeout;
         let bootCompleted = false;
-        let konamiIndex = 0;
-        let deerClickCount = 0;
-        let deerClickTimer = null;
         let typeString = '';
-        let typeTimer = null;
+        let folderClickCount = 0;
+        let folderClickTimer = null;
+        let virtualInputString = '';
         
-        // 科乐美码
-        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        // ========== Heeseung 彩蛋界面 ==========
+        function showHeeseungEasterEgg() {
+            // 移除可能存在的已有界面
+            const existing = document.getElementById('heeseungEasterEgg');
+            if (existing) existing.remove();
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'heeseungEasterEgg';
+            overlay.className = 'heeseung-overlay';
+            overlay.innerHTML = `
+                <div class="heeseung-card">
+                    <div class="heeseung-avatar">🦌</div>
+                    <div class="heeseung-name">LEE HEESEUNG</div>
+                    <div class="heeseung-dialogue">
+                        "嗯？<br>
+                        在找我？<br>
+                        我就在这里。"
+                    </div>
+                    <button class="heeseung-btn" id="closeHeeseungEgg">继续游戏</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            
+            document.getElementById('closeHeeseungEgg').addEventListener('click', () => {
+                overlay.remove();
+                // 强制弹回桌面
+                window.location.href = '#';
+                // 刷新桌面状态
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+            });
+            
+            // 播放音效
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.value = 440;
+                g.gain.setValueAtTime(0.1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.start();
+                o.stop(ctx.currentTime + 1);
+                setTimeout(() => ctx.close(), 1100);
+            } catch(e) {}
+        }
         
         // ========== 辅助函数 ==========
         function showNotification(msg, duration = 3000) {
@@ -197,91 +384,76 @@
             setTimeout(() => div.remove(), 2000);
         }
         
+        function showHeartEffect() {
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.textContent = '💖';
+                    heart.style.cssText = `
+                        position: fixed;
+                        left: ${Math.random() * 100}%;
+                        top: 80%;
+                        font-size: ${Math.random() * 20 + 15}px;
+                        animation: floatHeart 2s ease-out forwards;
+                        pointer-events: none;
+                        z-index: 10000;
+                    `;
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 2000);
+                }, i * 80);
+            }
+        }
+        
+        function addRipple(e) {
+            const x = e.clientX;
+            const y = e.clientY;
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.left = x - 25 + 'px';
+            ripple.style.top = y - 25 + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+        
         function updateTime() {
             const now = new Date();
             document.getElementById('taskbarTime').textContent = now.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
         }
         
-        // ========== 彩蛋系统 ==========
-        
-        // 1. 科乐美彩蛋
-        function checkKonami(e) {
-            if (e.key === konamiCode[konamiIndex]) {
-                konamiIndex++;
-                if (konamiIndex === konamiCode.length) {
-                    konamiIndex = 0;
-                    showNotification('🎮 恭喜！彩蛋触发！', 3000);
-                    showFloatingEmoji('🎮');
-                    const msg = document.createElement('div');
-                    msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#ff66aa,#ffd966);color:#0a0a0a;padding:20px 40px;border-radius:20px;font-family:monospace;z-index:10000;font-size:16px;text-align:center;';
-                    msg.innerHTML = '✨ 科乐美彩蛋！<br>你发现了隐藏指令 ✨';
-                    document.body.appendChild(msg);
-                    setTimeout(() => msg.remove(), 2500);
-                }
-            } else {
-                konamiIndex = 0;
-            }
-        }
-        
-        // 2. 鹿角连点彩蛋
-        function checkDeerClick() {
-            deerClickCount++;
-            if (deerClickTimer) clearTimeout(deerClickTimer);
-            deerClickTimer = setTimeout(() => { deerClickCount = 0; }, 2000);
+        // ========== 虚拟键盘输入（手机用） ==========
+        function processVirtualInput(key) {
+            virtualInputString += key.toLowerCase();
+            if (virtualInputString.length > 8) virtualInputString = virtualInputString.slice(-8);
             
-            if (deerClickCount >= 5) {
-                deerClickCount = 0;
-                showNotification('🦌✨ 隐藏彩蛋！', 2000);
-                document.body.classList.add('glitch-effect');
-                setTimeout(() => document.body.classList.remove('glitch-effect'), 500);
-                showFloatingEmoji('✨');
-                const msg = document.createElement('div');
-                msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:2px solid #ff66aa;padding:20px;border-radius:16px;z-index:10000;text-align:center;font-family:monospace;';
-                msg.innerHTML = `
-                    <div style="font-size:48px;">🦌</div>
-                    <div style="color:#ff66aa;margin-top:10px;">「你发现了我」</div>
-                    <div style="font-size:11px;color:#888;margin-top:8px;">—— 李羲承</div>
-                `;
-                document.body.appendChild(msg);
-                setTimeout(() => msg.remove(), 3000);
-            }
-        }
-        
-        // 3. 键盘打字彩蛋
-        function checkTypeString(e) {
-            typeString += e.key.toLowerCase();
-            if (typeString.length > 8) typeString = typeString.slice(-8);
-            if (typeString.includes('heeseung')) {
-                typeString = '';
-                showNotification('💖 李羲承 💖', 2000);
-                showFloatingEmoji('💖');
-                document.body.classList.add('heart-beat');
-                setTimeout(() => document.body.classList.remove('heart-beat'), 500);
-            }
-        }
-        
-        // 4. 手机摇一摇彩蛋
-        if (window.DeviceMotionEvent) {
-            let lastShake = 0;
-            window.addEventListener('devicemotion', function(e) {
-                const acceleration = e.accelerationIncludingGravity;
-                if (acceleration) {
-                    const x = acceleration.x;
-                    const y = acceleration.y;
-                    const z = acceleration.z;
-                    const shake = Math.abs(x) + Math.abs(y) + Math.abs(z);
-                    const now = Date.now();
-                    if (shake > 25 && now - lastShake > 3000) {
-                        lastShake = now;
-                        showNotification('📱 别摇了...', 1500);
-                        showFloatingEmoji('📱');
-                    }
+            if (virtualInputString === 'heeseung' || virtualInputString === 'heeseun' && virtualInputString.length === 7) {
+                // 精确匹配 heeseung
+                if (virtualInputString === 'heeseung') {
+                    virtualInputString = '';
+                    showHeartEffect();
+                    showHeeseungEasterEgg();
                 }
-            });
+            }
         }
         
-        // 5. 键盘快捷键彩蛋
-        document.addEventListener('keydown', (e) => {
+        // ========== 键盘输入（电脑用） ==========
+        let keyboardInputString = '';
+        
+        function checkKeyboardInput(e) {
+            // 只处理字母键
+            if (e.key.length === 1 && /[a-zA-Z]/i.test(e.key)) {
+                keyboardInputString += e.key.toLowerCase();
+                if (keyboardInputString.length > 8) keyboardInputString = keyboardInputString.slice(-8);
+                
+                if (keyboardInputString === 'heeseung') {
+                    keyboardInputString = '';
+                    showHeartEffect();
+                    showHeeseungEasterEgg();
+                }
+            }
+        }
+        
+        // ========== 快捷键彩蛋 ==========
+        function checkShortcuts(e) {
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault();
                 showNotification('💾 保存到哪里？你心里吗。', 2000);
@@ -296,10 +468,67 @@
                 console.log('%c│          🦌                       │', '#555');
                 console.log('%c│   别拆了。没什么好拆的。           │', '#ffd966');
                 console.log('%c└─────────────────────────────────┘', '#555');
+                showNotification('🔍 你打开了开发者工具', 2000);
             }
-            checkKonami(e);
-            checkTypeString(e);
-        });
+        }
+        
+        // ========== 鹿角连点彩蛋 ==========
+        let deerClickCount = 0;
+        let deerClickTimer = null;
+        
+        function checkDeerClick(e) {
+            addRipple(e);
+            deerClickCount++;
+            if (deerClickTimer) clearTimeout(deerClickTimer);
+            deerClickTimer = setTimeout(() => { deerClickCount = 0; }, 2000);
+            
+            if (deerClickCount === 3) {
+                showNotification('🦌 再点2次...', 1000);
+            }
+            
+            if (deerClickCount >= 5) {
+                deerClickCount = 0;
+                showFloatingEmoji('✨');
+                showNotification('🦌 你发现了鹿角的秘密！', 2000);
+                document.body.classList.add('glitch-effect');
+                setTimeout(() => document.body.classList.remove('glitch-effect'), 500);
+            }
+        }
+        
+        // ========== 文件夹连点彩蛋 ==========
+        function checkFolderClick(e) {
+            addRipple(e);
+            folderClickCount++;
+            if (folderClickTimer) clearTimeout(folderClickTimer);
+            folderClickTimer = setTimeout(() => { folderClickCount = 0; }, 3000);
+            
+            if (folderClickCount === 5) {
+                showNotification('📁 再点5次...', 1000);
+            }
+            
+            if (folderClickCount >= 10) {
+                folderClickCount = 0;
+                showNotification('📁 你很执着呢', 2000);
+                showFloatingEmoji('💙');
+            }
+        }
+        
+        // ========== 手机摇一摇彩蛋 ==========
+        if (window.DeviceMotionEvent) {
+            let lastShake = 0;
+            window.addEventListener('devicemotion', function(e) {
+                const acc = e.accelerationIncludingGravity;
+                if (acc) {
+                    const shake = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+                    const now = Date.now();
+                    if (shake > 25 && now - lastShake > 3000) {
+                        lastShake = now;
+                        showNotification('📱 你摇了摇手机！', 1500);
+                        showFloatingEmoji('📱');
+                    }
+                }
+            });
+        }
         
         // ========== 依赖度更新 ==========
         function updateDependency() {
@@ -388,6 +617,10 @@
             contextMenu.classList.remove('hidden');
         });
         
+        archiveIcon.addEventListener('click', (e) => {
+            checkFolderClick(e);
+        });
+        
         // 删除菜单
         document.getElementById('menuDelete').addEventListener('click', () => {
             hideContextMenu();
@@ -420,17 +653,17 @@
         // 显示隐藏文件夹
         document.getElementById('revealSecret').addEventListener('click', () => {
             hideContextMenu();
-            showNotification('🔓 隐藏文件夹功能已启用<br>输入密码: 1015hs', 3000);
+            showNotification('🔓 隐藏文件夹功能已启用', 2000);
         });
         
         // 桌面重新开始按钮
         document.getElementById('desktopRestartBtn').addEventListener('click', resetAllProgress);
         
         // 鹿角点击彩蛋
-        document.getElementById('deerIcon').addEventListener('click', () => {
+        document.getElementById('deerIcon').addEventListener('click', (e) => {
             showNotification('🦌 你看见我了', 1500);
             showFloatingEmoji('🦌');
-            checkDeerClick();
+            checkDeerClick(e);
         });
         
         // 关闭属性对话框
@@ -438,7 +671,7 @@
             document.getElementById('propertiesDialog').classList.add('hidden');
         });
         
-        // 密码验证
+        // 密码验证（隐藏结局用）
         const passwordDialog = document.getElementById('passwordDialog');
         const passwordInput = document.getElementById('passwordInput');
         
@@ -491,10 +724,6 @@
             }
         });
         
-        archiveIcon.addEventListener('click', (e) => {
-            if (e.detail === 1 && bootCompleted && deleteAttempts === 0) showNotification('❓ 双击打开', 1500);
-        });
-        
         // 其他文件夹
         document.querySelectorAll('.desktop-icon:not(.archive-icon)').forEach(icon => {
             icon.addEventListener('dblclick', () => showNotification('📂 此文件夹为空。或者...你没有权限查看。'));
@@ -506,7 +735,52 @@
             dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.classList.add('hidden'); });
         });
         
-        // 初始化
+        // ========== 手机专用功能 ==========
+        if (isMobile || isTouch) {
+            // 显示手机彩蛋按钮和虚拟键盘
+            const mobileBtn = document.getElementById('mobileEasterBtn');
+            const virtualKeyboard = document.getElementById('virtualKeyboard');
+            
+            mobileBtn.style.display = 'flex';
+            
+            mobileBtn.addEventListener('click', () => {
+                if (virtualKeyboard.style.display === 'none') {
+                    virtualKeyboard.style.display = 'flex';
+                    showNotification('✨ 点击按钮拼写 "HEESEUNG"', 2000);
+                } else {
+                    virtualKeyboard.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('closeKeyboard').addEventListener('click', () => {
+                virtualKeyboard.style.display = 'none';
+            });
+            
+            // 虚拟键盘按钮
+            document.querySelectorAll('.virtual-key-btn[data-key]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.getAttribute('data-key');
+                    processVirtualInput(key);
+                    
+                    // 按钮动画
+                    btn.style.transform = 'scale(0.9)';
+                    setTimeout(() => { btn.style.transform = ''; }, 100);
+                });
+            });
+            
+            // 显示手势提示
+            setTimeout(() => {
+                showNotification('✨ 点击✨按钮拼写 "HEESEUNG" 有惊喜 ✨', 4000);
+            }, 2000);
+        }
+        
+        // ========== 注册键盘事件（电脑用） ==========
+        document.addEventListener('keydown', (e) => {
+            checkKeyboardInput(e);
+            checkShortcuts(e);
+        });
+        
+        // ========== 初始化 ==========
         updateTime();
         setInterval(updateTime, 1000);
         setInterval(updateDependency, 5000);
@@ -515,9 +789,9 @@
         // 控制台彩蛋
         console.log('%c🦌 HEE · 痕迹', 'color: #ffd966; font-size: 14px');
         console.log('%c彩蛋列表:', 'color: #ffd966; font-size: 12px');
-        console.log('  🎮 科乐美码: ↑↑↓↓←→←→BA');
+        console.log('  💖 输入 "heeseung" - 触发隐藏对话');
         console.log('  🦌 连续点击鹿角5次');
-        console.log('  ⌨️ 输入 "heeseung"');
+        console.log('  📁 连续点击HEE文件夹10次');
         console.log('  📱 手机摇一摇');
         console.log('  💾 Ctrl+S');
         console.log('  🔍 Ctrl+Shift+I');
