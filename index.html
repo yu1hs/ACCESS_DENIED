@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>二手笔记本 - 桌面</title>
+    <link rel="stylesheet" href="desktop.css">
+</head>
+<body>
+    <!-- 桌面壁纸 -->
+    <div class="wallpaper"></div>
+    
+    <!-- 桌面图标 -->
+    <div class="desktop-icons">
+        <div class="desktop-icon" data-folder="documents">
+            <div class="icon-folder">📁</div>
+            <span class="icon-label">Documents</span>
+        </div>
+        <div class="desktop-icon" data-folder="downloads">
+            <div class="icon-folder">📁</div>
+            <span class="icon-label">Downloads</span>
+        </div>
+        <div class="desktop-icon" data-folder="recycle">
+            <div class="icon-folder">🗑️</div>
+            <span class="icon-label">Recycle Bin</span>
+        </div>
+        <div class="desktop-icon archive-icon" data-folder="archive">
+            <div class="icon-folder" id="archiveFolderIcon">❓</div>
+            <span class="icon-label">HEE_ARCHIVE</span>
+        </div>
+    </div>
+
+    <!-- 任务栏 -->
+    <div class="taskbar">
+        <div class="start-btn">🖥️</div>
+        <div class="taskbar-time" id="taskbarTime">--:--</div>
+        <div class="network-status">🌐 已连接</div>
+        <div class="deer-icon" id="deerIcon">🦌</div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div id="contextMenu" class="context-menu hidden">
+        <div class="context-item" id="menuDelete">删除</div>
+        <div class="context-item" id="menuProperties">属性</div>
+    </div>
+
+    <!-- 删除确认对话框 -->
+    <div id="deleteDialog" class="dialog hidden">
+        <div class="dialog-content">
+            <p id="deleteMessage">确定要删除此文件夹吗？</p>
+            <div class="dialog-buttons">
+                <button id="confirmDelete">确定</button>
+                <button id="cancelDelete">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 属性对话框 -->
+    <div id="propertiesDialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3>📁 HEE_ARCHIVE 属性</h3>
+            <div class="prop-row">
+                <span class="prop-label">类型：</span>
+                <span>文件夹</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">位置：</span>
+                <span>C:\Users\Unknown\Desktop</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">大小：</span>
+                <span id="propSize">计算中...</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">创建时间：</span>
+                <span>无法读取</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">修改时间：</span>
+                <span>无法读取</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">属性：</span>
+                <span>🔒 只读 · 🔒 隐藏 · 🔒 系统</span>
+            </div>
+            <div class="creator-note" id="creatorNote"></div>
+            <button id="closeProperties" class="dialog-close">关闭</button>
+        </div>
+    </div>
+
+    <!-- 通知气泡 -->
+    <div id="notification" class="notification hidden"></div>
+
+    <!-- 系统启动画面（首次进入） -->
+    <div id="bootScreen" class="boot-screen">
+        <div class="boot-text">
+            <div>Booting...</div>
+            <div>Loading Windows...</div>
+            <div>Loading personal settings...</div>
+            <div class="boot-done">Welcome.</div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 初始化 ==========
+        let deleteAttempts = 0;
+        let notificationTimeout;
+        let bootCompleted = false;
+
+        // 检查是否首次访问
+        if (!localStorage.getItem('boot_completed')) {
+            // 显示启动画面
+            setTimeout(() => {
+                const bootScreen = document.getElementById('bootScreen');
+                bootScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    bootScreen.style.display = 'none';
+                    localStorage.setItem('boot_completed', 'true');
+                    bootCompleted = true;
+                }, 1000);
+            }, 2000);
+        } else {
+            document.getElementById('bootScreen').style.display = 'none';
+            bootCompleted = true;
+        }
+
+        // 更新任务栏时间
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('taskbarTime').textContent = `${hours}:${minutes}`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 显示通知
+        function showNotification(msg, duration = 3000) {
+            const notif = document.getElementById('notification');
+            notif.textContent = msg;
+            notif.classList.remove('hidden');
+            if (notificationTimeout) clearTimeout(notificationTimeout);
+            notificationTimeout = setTimeout(() => {
+                notif.classList.add('hidden');
+            }, duration);
+        }
+
+        // ========== 右键菜单逻辑 ==========
+        const contextMenu = document.getElementById('contextMenu');
+        let currentTargetIcon = null;
+
+        function hideContextMenu() {
+            contextMenu.classList.add('hidden');
+        }
+
+        document.addEventListener('click', hideContextMenu);
+
+        // 桌面图标右键
+        const archiveIcon = document.querySelector('.archive-icon');
+        
+        archiveIcon.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            currentTargetIcon = archiveIcon;
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+            contextMenu.classList.remove('hidden');
+        });
+
+        // 删除菜单项
+        document.getElementById('menuDelete').addEventListener('click', () => {
+            hideContextMenu();
+            deleteAttempts++;
+            
+            if (deleteAttempts === 1) {
+                showNotification('⚠️ 无法删除此文件夹：访问被拒绝');
+            } else if (deleteAttempts === 2) {
+                showNotification('❓ 你确定要删吗...算了问了也没用');
+            } else if (deleteAttempts === 3) {
+                showNotification('⚠️ 此文件夹包含系统关键文件，删除可能导致系统不稳定。请勿尝试。——最后一位使用者');
+                // 第三次后改变图标
+                document.getElementById('archiveFolderIcon').textContent = '🔒';
+            } else {
+                showNotification('⛔ 系统保护：此操作已被禁止');
+            }
+        });
+
+        // 属性菜单项
+        document.getElementById('menuProperties').addEventListener('click', () => {
+            hideContextMenu();
+            
+            // 动态更新属性对话框内容
+            const sizeText = deleteAttempts >= 2 ? '未知 (受保护)' : '计算中...';
+            document.getElementById('propSize').textContent = sizeText;
+            
+            const creatorNote = document.getElementById('creatorNote');
+            if (deleteAttempts >= 1) {
+                creatorNote.innerHTML = '创建者：L.H.S<br><span style="font-size:11px;color:#888;">最后访问：' + new Date().toLocaleDateString() + '</span>';
+            } else {
+                creatorNote.innerHTML = '创建者：Unknown';
+            }
+            
+            document.getElementById('propertiesDialog').classList.remove('hidden');
+        });
+
+        // 关闭属性对话框
+        document.getElementById('closeProperties').addEventListener('click', () => {
+            document.getElementById('propertiesDialog').classList.add('hidden');
+        });
+
+        // 双击打开 HEE_ARCHIVE
+        archiveIcon.addEventListener('dblclick', () => {
+            if (bootCompleted) {
+                // 显示加载提示
+                showNotification('🔓 正在打开 HEE_ARCHIVE...', 1000);
+                setTimeout(() => {
+                    window.location.href = 'archive/index.html';
+                }, 500);
+            } else {
+                showNotification('系统正在启动中...', 1500);
+            }
+        });
+
+        // 单击 archive 图标显示提示
+        archiveIcon.addEventListener('click', (e) => {
+            if (e.detail === 1 && bootCompleted && deleteAttempts === 0) {
+                showNotification('❓ 双击打开', 1500);
+            }
+        });
+
+        // ========== 其他桌面图标 ==========
+        const otherIcons = document.querySelectorAll('.desktop-icon:not(.archive-icon)');
+        otherIcons.forEach(icon => {
+            icon.addEventListener('dblclick', () => {
+                showNotification('📂 此文件夹为空。或者...你没有权限查看。');
+            });
+            
+            icon.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showNotification('⚠️ 无法访问：权限不足');
+            });
+        });
+
+        // 点击任务栏鹿图标彩蛋
+        document.getElementById('deerIcon').addEventListener('click', () => {
+            showNotification('🦌 你看见我了', 2000);
+        });
+
+        // 点击背景关闭对话框
+        document.querySelectorAll('.dialog').forEach(dialog => {
+            dialog.addEventListener('click', (e) => {
+                if (e.target === dialog) {
+                    dialog.classList.add('hidden');
+                }
+            });
+        });
+
+        // 控制台彩蛋
+        console.log('%c🦌 HEE_ARCHIVE', 'color: #ffd966; font-size: 16px; font-family: monospace;');
+        console.log('%c你找到的不是一个人的秘密，而是一个人愿意留下来的痕迹。', 'color: #888; font-style: italic;');
+
+        // 键盘彩蛋
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                showNotification('💾 保存到哪里？你心里吗。');
+            }
+            if (e.key === 'F5') {
+                e.preventDefault();
+                showNotification('🔄 刷新也不会变快');
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                console.log('%c┌─────────────────────────────────┐', '#555');
+                console.log('%c│          🦌                       │', '#555');
+                console.log('%c│   别拆了。没什么好拆的。           │', '#ffd966');
+                console.log('%c└─────────────────────────────────┘', '#555');
+            }
+        });
+    </script>
+</body>
+</html>
