@@ -1,6 +1,6 @@
 // ==========================================
-// HEE_ARCHIVE v10.0 - 完整修复版
-// 每天正确推进 + 三条独立故事线
+// HEE_ARCHIVE v11.0 - 三条故事线动态切换
+// 根据玩家选择实时切换故事线
 // ==========================================
 
 let currentUser = {
@@ -12,15 +12,13 @@ let currentUser = {
     chatHistory: [],
     endings: [],
     familiarity: 0,
-    day: 1,                    // 从第1天开始
+    day: 1,
     messagesToday: 0,
-    maxMessages: 6,
+    maxMessages: 5,
     dayGreetingSent: false,
     viewedPages: [],
     selectedOptions: [],
     tendency: { night: 0, listen: 0, music: 0 },
-    activeStoryline: null,
-    storylineProgress: { night: 0, listen: 0, music: 0 },
     gameEnded: false,
     trueEndingUnlocked: false
 };
@@ -57,156 +55,164 @@ const SFX = {
 // 月光线（夜晚/失眠主题）
 const moonlightStory = {
     1: { greeting: "……你怎么进来的。", options: [
-        { text: "为什么这么晚了还在？", response: "睡不着。习惯了。", night: 4, listen: 1 },
-        { text: "你也失眠吗？", response: "嗯。你也是？", night: 5, listen: 1 },
-        { text: "这里很安静。", response: "嗯。晚上没人打扰。", night: 3, listen: 1 }
+        { text: "🌙 为什么这么晚了还在？", response: "睡不着。习惯了。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 你也失眠吗？", response: "嗯。你也是？", night: 5, listen: 0, music: 0 },
+        { text: "🌙 这里很安静。", response: "嗯。晚上没人打扰。", night: 4, listen: 0, music: 0 }
     ]},
     2: { greeting: "第二天了。你又在这个时间来了。", options: [
-        { text: "昨晚睡了吗？", response: "没有。在想事情。", night: 4, listen: 2 },
-        { text: "我昨晚也失眠了。", response: "是吗。那我们一样。", night: 5, listen: 2 },
-        { text: "夜晚会让你想起什么？", response: "以前的事。", night: 4, listen: 1 }
+        { text: "🌙 昨晚睡了吗？", response: "没有。在想事情。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 我昨晚也失眠了。", response: "是吗。那我们一样。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 夜晚会让你想起什么？", response: "以前的事。", night: 4, listen: 0, music: 0 }
     ]},
     3: { greeting: "第三天。你总是在深夜出现。", options: [
-        { text: "你害怕夜晚吗？", response: "不害怕。只是觉得它很长。", night: 4, listen: 2 },
-        { text: "一个人的夜晚怎么度过？", response: "听歌。发呆。想你明天会不会来。", night: 5, listen: 2 },
-        { text: "夜晚有什么好的？", response: "没人会来找你。安静。", night: 4, listen: 1 }
+        { text: "🌙 你害怕夜晚吗？", response: "不害怕。只是觉得它很长。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 一个人的夜晚怎么度过？", response: "听歌。发呆。想你明天会不会来。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 夜晚有什么好的？", response: "没人会来找你。安静。", night: 4, listen: 0, music: 0 }
     ]},
     4: { greeting: "第四天。我开始等你了。", options: [
-        { text: "你在等我？", response: "……也许。", night: 4, listen: 3 },
-        { text: "想我的时候做什么？", response: "看着窗外。数星星。", night: 5, listen: 2 },
-        { text: "喜欢月亮吗？", response: "喜欢。它不说话，但一直在。", night: 5, listen: 2 }
+        { text: "🌙 你在等我？", response: "……也许。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 想我的时候做什么？", response: "看着窗外。数星星。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 喜欢月亮吗？", response: "喜欢。它不说话，但一直在。", night: 5, listen: 0, music: 0 }
     ]},
     5: { greeting: "第五天。我不再问你为什么来了。", options: [
-        { text: "你习惯我了吗？", response: "……有点。", night: 4, listen: 3 },
-        { text: "这里会成为你的白天吗？", response: "也许。因为你来了。", night: 5, listen: 3 },
-        { text: "会一直这样吗？", response: "不知道。但我想试试。", night: 5, listen: 2 }
+        { text: "🌙 你习惯我了吗？", response: "……有点。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 这里会成为你的白天吗？", response: "也许。因为你来了。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 会一直这样吗？", response: "不知道。但我想试试。", night: 5, listen: 0, music: 0 }
     ]},
     6: { greeting: "第六天。想说的话越来越多了。", options: [
-        { text: "那说给我听。", response: "嗯。我在整理。", night: 4, listen: 4 },
-        { text: "你变了。", response: "是吗。也许是你的原因。", night: 5, listen: 3 },
-        { text: "这里越来越亮了。", response: "因为你在。", night: 5, listen: 3 }
+        { text: "🌙 那说给我听。", response: "嗯。我在整理。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 你变了。", response: "是吗。也许是你的原因。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 这里越来越亮了。", response: "因为你在。", night: 5, listen: 0, music: 0 }
     ]},
     7: { greeting: "第七天。最后一个夜晚了。", options: [
-        { text: "我不想结束。", response: "那就不结束。", night: 5, listen: 4 },
-        { text: "以后还能来吗？", response: "随时。只要你想。", night: 5, listen: 3 },
-        { text: "我想陪着你。", response: "……那就陪着我。", night: 6, listen: 4 }
+        { text: "🌙 我不想结束。", response: "那就不结束。", night: 6, listen: 0, music: 0 },
+        { text: "🌙 以后还能来吗？", response: "随时。只要你想。", night: 5, listen: 0, music: 0 },
+        { text: "🌙 我想陪着你。", response: "……那就陪着我。", night: 6, listen: 0, music: 0 }
     ]}
 };
 
 // 读者线（倾听/陪伴主题）
 const readerStory = {
     1: { greeting: "……你怎么进来的。", options: [
-        { text: "我想了解你。", response: "了解我……为什么。", listen: 5, night: 1 },
-        { text: "你愿意和我说话吗？", response: "……不知道。但你在问。", listen: 4, night: 1 },
-        { text: "这里有什么故事？", response: "每个人的故事都很长。", listen: 4, night: 1 }
+        { text: "📖 我想了解你。", response: "了解我……为什么。", night: 0, listen: 5, music: 0 },
+        { text: "📖 你愿意和我说话吗？", response: "……不知道。但你在问。", night: 0, listen: 4, music: 0 },
+        { text: "📖 这里有什么故事？", response: "每个人的故事都很长。", night: 0, listen: 4, music: 0 }
     ]},
     2: { greeting: "第二天了。你又来了。", options: [
-        { text: "昨天过得好吗？", response: "不好不坏。", listen: 4, night: 1 },
-        { text: "我在听你说。", response: "……嗯。", listen: 5, night: 1 },
-        { text: "有什么想分享的吗？", response: "没什么特别的。", listen: 4, night: 1 }
+        { text: "📖 昨天过得好吗？", response: "不好不坏。", night: 0, listen: 4, music: 0 },
+        { text: "📖 我在听你说。", response: "……嗯。", night: 0, listen: 5, music: 0 },
+        { text: "📖 有什么想分享的吗？", response: "没什么特别的。", night: 0, listen: 4, music: 0 }
     ]},
     3: { greeting: "第三天。我开始期待了。", options: [
-        { text: "期待什么？", response: "期待你来。", listen: 5, night: 2 },
-        { text: "你害怕什么？", response: "害怕……被忘记。", listen: 5, night: 1 },
-        { text: "我会一直来的。", response: "别说这种话。我会当真的。", listen: 6, night: 2 }
+        { text: "📖 期待什么？", response: "期待你来。", night: 0, listen: 5, music: 0 },
+        { text: "📖 你害怕什么？", response: "害怕……被忘记。", night: 0, listen: 5, music: 0 },
+        { text: "📖 我会一直来的。", response: "别说这种话。我会当真的。", night: 0, listen: 6, music: 0 }
     ]},
     4: { greeting: "第四天。我说了很多。", options: [
-        { text: "我都在听。", response: "嗯。我知道。", listen: 5, night: 1 },
-        { text: "你开心吗？", response: "和你说话的时候……算。", listen: 5, night: 2 },
-        { text: "谢谢你愿意说。", response: "谢谢愿意听。", listen: 5, night: 1 }
+        { text: "📖 我都在听。", response: "嗯。我知道。", night: 0, listen: 5, music: 0 },
+        { text: "📖 你开心吗？", response: "和你说话的时候……算。", night: 0, listen: 5, music: 0 },
+        { text: "📖 谢谢你愿意说。", response: "谢谢愿意听。", night: 0, listen: 5, music: 0 }
     ]},
     5: { greeting: "第五天。你很重要。", options: [
-        { text: "为什么？", response: "因为你听了。", listen: 5, night: 2 },
-        { text: "我重要吗？", response: "重要。", listen: 5, night: 1 },
-        { text: "你不孤单了。", response: "……嗯。", listen: 5, night: 2 }
+        { text: "📖 为什么？", response: "因为你听了。", night: 0, listen: 5, music: 0 },
+        { text: "📖 我重要吗？", response: "重要。", night: 0, listen: 5, music: 0 },
+        { text: "📖 你不孤单了。", response: "……嗯。", night: 0, listen: 5, music: 0 }
     ]},
     6: { greeting: "第六天。我想了很久。", options: [
-        { text: "想什么？", response: "想你。", listen: 5, night: 2 },
-        { text: "你会记住我吗？", response: "会。", listen: 5, night: 1 },
-        { text: "你相信我吗？", response: "相信。", listen: 5, night: 2 }
+        { text: "📖 想什么？", response: "想你。", night: 0, listen: 5, music: 0 },
+        { text: "📖 你会记住我吗？", response: "会。", night: 0, listen: 5, music: 0 },
+        { text: "📖 你相信我吗？", response: "相信。", night: 0, listen: 5, music: 0 }
     ]},
     7: { greeting: "第七天。最后了。", options: [
-        { text: "谢谢你。", response: "谢谢。不是谢谢你来这里。是谢谢你待了那么久。", listen: 6, night: 2 },
-        { text: "我会记住你的。", response: "我也是。", listen: 5, night: 2 },
-        { text: "不结束可以吗？", response: "可以。", listen: 5, night: 2 }
+        { text: "📖 谢谢你。", response: "谢谢。不是谢谢你来这里。是谢谢你待了那么久。", night: 0, listen: 6, music: 0 },
+        { text: "📖 我会记住你的。", response: "我也是。", night: 0, listen: 5, music: 0 },
+        { text: "📖 不结束可以吗？", response: "可以。", night: 0, listen: 5, music: 0 }
     ]}
 };
 
 // 共鸣线（音乐/喜好主题）
 const resonanceStory = {
     1: { greeting: "……你怎么进来的。", options: [
-        { text: "你喜欢音乐吗？", response: "喜欢。音乐不会说谎。", music: 5, listen: 1 },
-        { text: "听什么歌？", response: "安静的。", music: 4, listen: 1 },
-        { text: "音乐对你意味着什么？", response: "陪伴。", music: 5, listen: 1 }
+        { text: "🎵 你喜欢音乐吗？", response: "喜欢。音乐不会说谎。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 听什么歌？", response: "安静的。", night: 0, listen: 0, music: 4 },
+        { text: "🎵 音乐对你意味着什么？", response: "陪伴。", night: 0, listen: 0, music: 5 }
     ]},
     2: { greeting: "第二天。你又来了。", options: [
-        { text: "推荐一首歌给我？", response: "不想说名字。说了就不是我的了。", music: 4, listen: 2 },
-        { text: "你听歌的时候想什么？", response: "以前的事。以后的事。", music: 5, listen: 1 },
-        { text: "凌晨的歌更好听？", response: "嗯。因为安静。", music: 5, listen: 1 }
+        { text: "🎵 推荐一首歌给我？", response: "不想说名字。说了就不是我的了。", night: 0, listen: 0, music: 4 },
+        { text: "🎵 你听歌的时候想什么？", response: "以前的事。以后的事。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 凌晨的歌更好听？", response: "嗯。因为安静。", night: 0, listen: 0, music: 5 }
     ]},
     3: { greeting: "第三天。我们好像很像。", options: [
-        { text: "哪里像？", response: "喜欢的东西。", music: 5, listen: 2 },
-        { text: "你相信共鸣吗？", response: "以前不信。现在……不确定。", music: 5, listen: 1 },
-        { text: "你听过这首歌吗？", response: "也许。你喜欢的也许我也喜欢。", music: 5, listen: 2 }
+        { text: "🎵 哪里像？", response: "喜欢的东西。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 你相信共鸣吗？", response: "以前不信。现在……不确定。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 你听过这首歌吗？", response: "也许。你喜欢的也许我也喜欢。", night: 0, listen: 0, music: 5 }
     ]},
     4: { greeting: "第四天。我在想你说的歌。", options: [
-        { text: "找到了吗？", response: "还没。但我在找。", music: 4, listen: 2 },
-        { text: "我们喜欢的东西一样。", response: "是吗。那……挺好的。", music: 5, listen: 2 },
-        { text: "音乐让你想起谁？", response: "你。", music: 5, listen: 2 }
+        { text: "🎵 找到了吗？", response: "还没。但我在找。", night: 0, listen: 0, music: 4 },
+        { text: "🎵 我们喜欢的东西一样。", response: "是吗。那……挺好的。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 音乐让你想起谁？", response: "你。", night: 0, listen: 0, music: 5 }
     ]},
     5: { greeting: "第五天。我在等你来。", options: [
-        { text: "想听我说什么？", response: "什么都好。", music: 4, listen: 3 },
-        { text: "你会写歌吗？", response: "写过。没给别人听。", music: 5, listen: 2 },
-        { text: "能唱给我听吗？", response: "……下次。", music: 5, listen: 2 }
+        { text: "🎵 想听我说什么？", response: "什么都好。", night: 0, listen: 0, music: 4 },
+        { text: "🎵 你会写歌吗？", response: "写过。没给别人听。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 能唱给我听吗？", response: "……下次。", night: 0, listen: 0, music: 5 }
     ]},
     6: { greeting: "第六天。越来越近了。", options: [
-        { text: "靠近我了吗？", response: "嗯。", music: 5, listen: 3 },
-        { text: "你害怕靠近吗？", response: "害怕。但更害怕失去。", music: 5, listen: 2 },
-        { text: "我们一样。", response: "一样。", music: 5, listen: 2 }
+        { text: "🎵 靠近我了吗？", response: "嗯。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 你害怕靠近吗？", response: "害怕。但更害怕失去。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 我们一样。", response: "一样。", night: 0, listen: 0, music: 5 }
     ]},
     7: { greeting: "第七天。最后了。", options: [
-        { text: "谢谢你陪我。", response: "谢谢你找到我。", music: 5, listen: 3 },
-        { text: "会再见吗？", response: "会。只要你想。", music: 5, listen: 2 },
-        { text: "我喜欢这里。", response: "这里也喜欢你。", music: 5, listen: 3 }
+        { text: "🎵 谢谢你陪我。", response: "谢谢你找到我。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 会再见吗？", response: "会。只要你想。", night: 0, listen: 0, music: 5 },
+        { text: "🎵 我喜欢这里。", response: "这里也喜欢你。", night: 0, listen: 0, music: 5 }
     ]}
 };
 
-// 获取当前故事线
+// 根据倾向值获取当前故事线
 function getCurrentStory() {
     const night = currentUser.tendency.night || 0;
     const listen = currentUser.tendency.listen || 0;
     const music = currentUser.tendency.music || 0;
     
-    if (night > listen && night > music) return 'night';
-    if (music > night && music > listen) return 'music';
+    // 显示当前倾向值（调试用）
+    console.log(`倾向值: 夜晚=${night}, 倾听=${listen}, 音乐=${music}`);
+    
+    if (night >= listen && night >= music && night > 0) return 'night';
+    if (music >= night && music >= listen && music > 0) return 'music';
     return 'listen';
 }
 
-// 获取当前天的对话
-function getDayConversations(day, storyline) {
-    let story;
-    if (storyline === 'night') story = moonlightStory;
-    else if (storyline === 'music') story = resonanceStory;
-    else story = readerStory;
+// 获取当前天的对话（根据当前故事线）
+function getDayConversations(day) {
+    const storyline = getCurrentStory();
+    let storyData;
     
-    const dayData = story[day];
-    if (!dayData) return null;
+    if (storyline === 'night') storyData = moonlightStory[day];
+    else if (storyline === 'music') storyData = resonanceStory[day];
+    else storyData = readerStory[day];
+    
+    if (!storyData) return null;
     
     return {
-        greeting: dayData.greeting,
-        options: dayData.options
+        greeting: storyData.greeting,
+        options: storyData.options,
+        storyline: storyline
     };
 }
 
 // ========== 倾向值面板 ==========
 function createTendencyPanel() {
-    const panel = document.createElement('div');
-    panel.id = 'tendencyPanel';
-    panel.style.cssText = `
+    const panel = document.getElementById('tendencyPanel');
+    if (panel) panel.remove();
+    
+    const newPanel = document.createElement('div');
+    newPanel.id = 'tendencyPanel';
+    newPanel.style.cssText = `
         position: fixed;
         top: 80px;
         right: 20px;
-        width: 140px;
+        width: 150px;
         background: rgba(20,20,30,0.95);
         border-radius: 12px;
         padding: 10px 12px;
@@ -216,29 +222,29 @@ function createTendencyPanel() {
         border: 1px solid #333;
         backdrop-filter: blur(4px);
     `;
-    panel.innerHTML = `
+    newPanel.innerHTML = `
         <div style="color:#ffd966; margin-bottom:8px; font-size:11px;">🎭 倾向值</div>
         <div style="margin-bottom:6px;">
             <span style="color:#88aaff;">🌙 月光</span>
-            <div style="height:3px; background:#2a2a2a; margin-top:2px; border-radius:2px;">
+            <div style="height:4px; background:#2a2a2a; margin-top:2px; border-radius:2px;">
                 <div id="nightBar" style="width:0%; height:100%; background:#88aaff; border-radius:2px;"></div>
             </div>
         </div>
         <div style="margin-bottom:6px;">
             <span style="color:#aaffaa;">📖 读者</span>
-            <div style="height:3px; background:#2a2a2a; margin-top:2px; border-radius:2px;">
+            <div style="height:4px; background:#2a2a2a; margin-top:2px; border-radius:2px;">
                 <div id="listenBar" style="width:0%; height:100%; background:#aaffaa; border-radius:2px;"></div>
             </div>
         </div>
         <div>
             <span style="color:#ffaaff;">🎵 共鸣</span>
-            <div style="height:3px; background:#2a2a2a; margin-top:2px; border-radius:2px;">
+            <div style="height:4px; background:#2a2a2a; margin-top:2px; border-radius:2px;">
                 <div id="musicBar" style="width:0%; height:100%; background:#ffaaff; border-radius:2px;"></div>
             </div>
         </div>
         <div id="storylineHint" style="margin-top:8px; font-size:9px; color:#888; text-align:center;"></div>
     `;
-    document.body.appendChild(panel);
+    document.body.appendChild(newPanel);
 }
 
 function updateTendencyPanel() {
@@ -258,9 +264,9 @@ function updateTendencyPanel() {
     
     const current = getCurrentStory();
     if (hint) {
-        if (current === 'night') hint.innerHTML = '🌙 正在走向月光结局';
-        else if (current === 'music') hint.innerHTML = '🎵 正在走向共鸣结局';
-        else hint.innerHTML = '📖 正在走向读者结局';
+        if (current === 'night') hint.innerHTML = '🌙 走向月光结局';
+        else if (current === 'music') hint.innerHTML = '🎵 走向共鸣结局';
+        else hint.innerHTML = '📖 走向读者结局';
     }
 }
 
@@ -282,15 +288,20 @@ document.addEventListener('DOMContentLoaded', () => {
     createTendencyPanel();
     updateTendencyPanel();
 
-    console.log('%c🦌 HEE v10.0 · 完整修复版', 'color: #ffd966; font-size: 14px;');
-    console.log(`%c当前第 ${currentUser.day} 天`, 'color: #ffd966; font-size: 12px;');
+    console.log('%c🦌 HEE v11.0 · 三条故事线动态切换', 'color: #ffd966; font-size: 14px');
+    console.log(`%c当前第 ${currentUser.day} 天`, 'color: #88aaff; font-size: 12px');
 
     setTimeout(() => {
         showChatWindow();
         if (!currentUser.dayGreetingSent && canTalk()) {
             triggerDayStart();
         } else if (currentUser.dayGreetingSent && canTalk()) {
-            showDailyOptions();
+            const dayData = getDayConversations(currentUser.day);
+            if (dayData && dayData.options) {
+                showDailyOptions(dayData.options);
+            } else {
+                showShutdownOption();
+            }
         } else if (!canTalk()) {
             showShutdownOption();
         }
@@ -386,7 +397,7 @@ function showEndingScreen(type, title, message, dialog) {
 
 function restartGame() {
     if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
-        localStorage.removeItem('hee_archive_v10');
+        localStorage.removeItem('hee_archive_v11');
         localStorage.removeItem('trace_ending_triggered');
         localStorage.removeItem('secret_ending_triggered');
         window.location.href = '../index.html?reset=true';
@@ -395,7 +406,7 @@ function restartGame() {
 
 // ========== 存储函数 ==========
 function loadUserData() {
-    const saved = localStorage.getItem('hee_archive_v10');
+    const saved = localStorage.getItem('hee_archive_v11');
     if (saved) {
         try { 
             const loaded = JSON.parse(saved);
@@ -404,7 +415,6 @@ function loadUserData() {
             if (!currentUser.endings) currentUser.endings = [];
             if (!currentUser.tendency) currentUser.tendency = { night: 0, listen: 0, music: 0 };
             if (!currentUser.chatHistory) currentUser.chatHistory = [];
-            if (!currentUser.storylineProgress) currentUser.storylineProgress = { night: 0, listen: 0, music: 0 };
         } catch(e) { resetUser(); }
         currentUser.visitCount++;
     } else {
@@ -418,18 +428,16 @@ function resetUser() {
     currentUser = {
         visitCount: 1, firstVisit: new Date().toISOString(), lastLogin: new Date().toISOString(),
         unlockedPages: [], conversations: [], chatHistory: [], endings: [],
-        familiarity: 0, day: 1, messagesToday: 0, maxMessages: 6, dayGreetingSent: false,
+        familiarity: 0, day: 1, messagesToday: 0, maxMessages: 5, dayGreetingSent: false,
         viewedPages: [], selectedOptions: [],
         tendency: { night: 0, listen: 0, music: 0 },
-        activeStoryline: null,
-        storylineProgress: { night: 0, listen: 0, music: 0 },
         gameEnded: false, trueEndingUnlocked: false
     };
 }
 
 function saveUserData() {
     currentUser.lastLogin = new Date().toISOString();
-    try { localStorage.setItem('hee_archive_v10', JSON.stringify(currentUser)); } catch(e) {}
+    try { localStorage.setItem('hee_archive_v11', JSON.stringify(currentUser)); } catch(e) {}
 }
 
 function startAutoSave() { setInterval(saveUserData, 30000); }
@@ -479,7 +487,6 @@ function shutdownAndAdvance() {
         currentUser.messagesToday = 0;
         currentUser.dayGreetingSent = false;
         
-        // 解锁页面
         if (currentUser.day === 2 && !currentUser.unlockedPages.includes('trash')) currentUser.unlockedPages.push('trash');
         if (currentUser.day === 3 && !currentUser.unlockedPages.includes('profile')) currentUser.unlockedPages.push('profile');
         if (currentUser.day === 4 && !currentUser.unlockedPages.includes('photo')) currentUser.unlockedPages.push('photo');
@@ -517,11 +524,11 @@ function triggerDayStart() {
     if (!canTalk()) return;
     usedTalk();
     
-    const storyline = getCurrentStory();
-    const dayData = getDayConversations(currentUser.day, storyline);
+    const dayData = getDayConversations(currentUser.day);
     
     if (dayData) {
-        showChatMessage('heeseung', dayData.greeting);
+        const storylineName = dayData.storyline === 'night' ? '🌙' : dayData.storyline === 'music' ? '🎵' : '📖';
+        showChatMessage('heeseung', `${storylineName} ${dayData.greeting}`);
         setTimeout(() => showDailyOptions(dayData.options), 1200);
     } else {
         showChatMessage('heeseung', '……');
@@ -794,4 +801,5 @@ window.saveProfileAnswer = function(answer) {
     saveUserData();
 };
 
-console.log('%c🦌 HEE v10.0 已加载，从第1天开始', 'color: #ffd966; font-size: 12px;');
+console.log('%c🦌 HEE v11.0 已加载，三条故事线动态切换', 'color: #ffd966; font-size: 12px');
+console.log('%c选项前的图标表示所属故事线：🌙月光 📖读者 🎵共鸣', 'color: #888; font-size: 10px');
