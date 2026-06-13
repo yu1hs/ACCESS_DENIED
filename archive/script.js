@@ -1,6 +1,6 @@
 // ==========================================
-// HEE_ARCHIVE v3.0 - 7天进程系统（完整修复版）
-// 修复：第四天卡住、关机推进、每日重置
+// HEE_ARCHIVE v3.0 - 完整修复版
+// 修复：刷新丢失聊天记录 + 每日内容解锁
 // ==========================================
 
 // ========== 全局状态 ==========
@@ -10,6 +10,7 @@ let currentUser = {
     lastLogin: null,
     unlockedPages: [],
     conversations: [],
+    chatHistory: [],        // 新增：保存聊天记录
     endings: [],
     familiarity: 0,
     day: 1,
@@ -29,11 +30,10 @@ let currentUser = {
     curiosityLevel: 0,
     stayLevel: 0,
     endingsTriggered: [],
-    // 每日对话记录（用于防止重复）
-    dailyConversations: {}
+    dailyConversations: {},   // 记录每天聊过的话题
+    trashReadCount: 0
 };
 
-let startTime = Date.now();
 let isChatActive = false;
 
 // ========== 音效 ==========
@@ -154,17 +154,64 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDayDisplay();
     startAutoSave();
     trackLateNight();
+    restoreChatHistory();  // 新增：恢复聊天记录
 
-    console.log('%c🦌 HEE v3.0 · 7天进程（完整修复版）', 'color: #ffd966; font-size: 14px;');
-    console.log('%c每天对话结束后点击「关机」推进到下一天', 'color: #888; font-size: 11px;');
+    console.log('%c🦌 HEE v3.0 · 完整修复版', 'color: #ffd966; font-size: 14px;');
 
     setTimeout(() => {
         showChatWindow();
-        triggerDayStart();
+        // 如果今天还没有开始对话，触发开始
+        if (!currentUser.dayGreetingSent && canTalk()) {
+            triggerDayStart();
+        } else if (currentUser.dayGreetingSent && canTalk()) {
+            showDailyOptions();
+        } else if (!canTalk()) {
+            showShutdownOption();
+        }
     }, 2000);
 });
 
-// 追踪深夜访问
+// 恢复聊天记录
+function restoreChatHistory() {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    if (currentUser.chatHistory && currentUser.chatHistory.length > 0) {
+        currentUser.chatHistory.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = `chat-message ${msg.sender === 'user' ? 'self' : ''} ${msg.isSystem ? 'system' : ''}`;
+            if (msg.content?.includes('\n')) {
+                msg.content.split('\n').forEach((line, i) => {
+                    if (i > 0) div.appendChild(document.createElement('br'));
+                    div.appendChild(document.createTextNode(line));
+                });
+            } else {
+                div.textContent = msg.content;
+            }
+            container.appendChild(div);
+        });
+        container.scrollTop = container.scrollHeight;
+    } else {
+        container.innerHTML = '<div class="chat-system">对话已建立连接...</div>';
+    }
+}
+
+function addToChatHistory(sender, content, isSystem = false) {
+    if (!currentUser.chatHistory) currentUser.chatHistory = [];
+    currentUser.chatHistory.push({
+        sender: sender,
+        content: content,
+        isSystem: isSystem,
+        time: Date.now()
+    });
+    // 只保留最近200条
+    if (currentUser.chatHistory.length > 200) {
+        currentUser.chatHistory = currentUser.chatHistory.slice(-200);
+    }
+    saveUserData();
+}
+
 function trackLateNight() {
     const hour = new Date().getHours();
     if (hour >= 0 && hour <= 5) {
@@ -178,9 +225,10 @@ function loadUserData() {
     const saved = localStorage.getItem('hee_archive_v3');
     if (saved) {
         try { 
-            currentUser = JSON.parse(saved);
-            // 确保每日对话记录存在
+            const loaded = JSON.parse(saved);
+            currentUser = { ...currentUser, ...loaded };
             if (!currentUser.dailyConversations) currentUser.dailyConversations = {};
+            if (!currentUser.chatHistory) currentUser.chatHistory = [];
         } catch(e) { resetUser(); }
         currentUser.visitCount++;
     } else {
@@ -198,6 +246,7 @@ function resetUser() {
         lastLogin: new Date().toISOString(),
         unlockedPages: [],
         conversations: [],
+        chatHistory: [],
         endings: [],
         familiarity: 0,
         day: 1,
@@ -217,7 +266,8 @@ function resetUser() {
         curiosityLevel: 0,
         stayLevel: 0,
         endingsTriggered: [],
-        dailyConversations: {}
+        dailyConversations: {},
+        trashReadCount: 0
     };
 }
 
@@ -244,7 +294,7 @@ function usedTalk() {
     updateDayDisplay();
 }
 
-// ========== 关机推进系统（完整修复版）==========
+// ========== 关机推进系统 ==========
 function shutdownAndAdvance() {
     if (currentUser.day >= 7) {
         showNotification('✨ 第七天已经结束。感谢你的陪伴。', 3000);
@@ -273,6 +323,7 @@ function shutdownAndAdvance() {
             currentUser.unlockedPages.push(cfg.unlock);
             currentUser.fileTriggers[cfg.unlock] = true;
             SFX.unlock();
+            showNotification(`🔓 ${cfg.unlock.toUpperCase()} 已解锁！`, 2000);
         }
         
         saveUserData();
@@ -284,11 +335,13 @@ function shutdownAndAdvance() {
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 1500);
                 
-                // 清空聊天记录
+                // 清空聊天记录显示（但保留存储）
                 const msgs = document.getElementById('chatMessages');
                 const opts = document.getElementById('chatOptions');
                 if (msgs) msgs.innerHTML = '<div class="chat-system">对话已建立连接...</div>';
                 if (opts) opts.innerHTML = '';
+                currentUser.chatHistory = [];
+                saveUserData();
                 
                 showChatWindow();
                 updateDayDisplay();
@@ -332,7 +385,7 @@ function handleTendency(tendency, optionKey) {
     saveUserData();
 }
 
-// ========== 每日对话选项（修复版）==========
+// ========== 每日对话选项 ==========
 function showDailyOptions() {
     if (!canTalk()) {
         showChatMessage('system', '⏳ 今天聊了很多了。点击「关机」推进到下一天吧。', true);
@@ -476,7 +529,6 @@ function showShutdownOption() {
 
 // ========== 结局系统 ==========
 function checkEndings() {
-    const chatCount = currentUser.conversations.length;
     const allPagesUnlocked = ['profile','photo','letters','playlog','clock'].every(p => currentUser.unlockedPages.includes(p));
     const hasReadTrash = (currentUser.trashReadCount || 0) >= 4;
     const hasReadLog = currentUser.viewedPages.includes('log');
@@ -524,15 +576,6 @@ function triggerEnding(type) {
     
     showChatMessage('system', `✨ 结局解锁：${ending.title} ✨`, true);
     showChatMessage('heeseung', ending.dialog);
-    
-    if (type === 'trace') {
-        setTimeout(() => {
-            showChatMessage('heeseung', '谢谢。不是谢谢你来这里。是谢谢你待了那么久。');
-        }, 2000);
-        setTimeout(() => {
-            showChatMessage('system', '🦌 感谢你的陪伴。\n—— Lee Heeseung', true);
-        }, 4000);
-    }
 }
 
 // ========== UI 函数 ==========
@@ -540,6 +583,7 @@ function showChatMessage(sender, content, isSystem = false) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
     if (sender !== 'system') SFX.msg();
+    
     const div = document.createElement('div');
     div.className = `chat-message ${sender === 'user' ? 'self' : ''} ${isSystem ? 'system' : ''}`;
     if (content?.includes('\n')) {
@@ -552,6 +596,9 @@ function showChatMessage(sender, content, isSystem = false) {
     }
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
+    
+    // 保存到历史记录
+    addToChatHistory(sender, content, isSystem);
 }
 
 function showChatOptions(options) {
