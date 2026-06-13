@@ -79,6 +79,40 @@
             border-left: 3px solid #ffd966;
         }
 
+        .endings-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+        }
+
+        .endings-section h4 {
+            color: #ffd966;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .endings-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .ending-badge {
+            background: #1a1a1a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #ffd966;
+        }
+
+        .ending-badge.special {
+            background: linear-gradient(135deg, #3a6ea5, #1a3a5a);
+            color: #ffd966;
+            box-shadow: 0 0 8px rgba(58, 110, 165, 0.3);
+        }
+
         .notes-section {
             margin-top: 25px;
             padding: 20px;
@@ -103,6 +137,20 @@
             font-size: 12px;
             color: #666;
         }
+
+        .true-ending-badge {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .true-ending-badge span {
+            background: #ffd966;
+            color: #0a0a0a;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -122,6 +170,13 @@
         </div>
     </div>
 
+    <div class="endings-section">
+        <h4>🏆 已获得的结局</h4>
+        <div id="endingsList" class="endings-list">
+            <span style="color: #555;">加载中...</span>
+        </div>
+    </div>
+
     <div class="notes-section">
         <h4>📌 NOTES</h4>
         <div class="notes-content" id="notesContent">
@@ -130,12 +185,28 @@
     </div>
 
     <div class="final-message" id="finalMessage"></div>
+    <div id="trueEndingBadge" class="true-ending-badge"></div>
 
     <script>
+        // 结局名称映射
+        const endingsMap = {
+            'moonlight': '🌙 月光',
+            'reader': '📖 读者',
+            'resonance': '🎵 共鸣',
+            'trace': '🕯️ 痕迹',
+            'fake': '🔒 未完成',
+            'true': '🌟 痕迹·完整'
+        };
+
+        // 检查是否为真结局模式
+        const isTrueEndingMode = window.location.search.includes('evan1015') || 
+                                  window.location.hash.includes('evan1015');
+
         function loadUserData() {
             const saved = localStorage.getItem('hee_archive_user');
             if (!saved) {
                 document.getElementById('visitStats').innerHTML = '<div class="stat-row">暂无数据</div>';
+                document.getElementById('endingsList').innerHTML = '<span style="color: #555;">暂无，继续探索吧</span>';
                 return;
             }
             
@@ -206,6 +277,9 @@
             
             document.getElementById('userRecords').innerHTML = recordsHtml;
             
+            // 显示结局
+            updateEndingsDisplay(userData);
+            
             // NOTES 内容
             document.getElementById('notesContent').innerHTML = `
                 会认真看完所有东西的人。<br><br>
@@ -213,12 +287,22 @@
             `;
             
             // 最终消息
-            if (unlockedCount >= 7) {
+            const endings = userData.endings || [];
+            const hasTrueEnding = endings.includes('true') || (isTrueEndingMode && endings.length >= 4);
+            
+            if (hasTrueEnding) {
                 document.getElementById('finalMessage').innerHTML = `
-                    🦌 你已经解锁了所有页面。<br>
+                    🦌✨ 你已经获得了真结局 ✨🦌<br><br>
                     你不是找到了密码。<br>
                     你是待得够久。<br><br>
                     「谢谢。不是谢谢你来这里。是谢谢你待了那么久。」
+                `;
+                document.getElementById('trueEndingBadge').innerHTML = '<span>🌟 真结局已解锁 🌟</span>';
+            } else if (unlockedCount >= 7) {
+                document.getElementById('finalMessage').innerHTML = `
+                    💭 你已经解锁了所有页面。<br>
+                    但似乎还有更深的东西等待发现...<br><br>
+                    <span style="font-size:11px;color:#555;">（页面角落有一行很小的字）</span>
                 `;
             } else {
                 document.getElementById('finalMessage').innerHTML = `
@@ -227,15 +311,59 @@
                 `;
             }
         }
-        
-        loadUserData();
-        
-        // 监听数据变化
+
+        function updateEndingsDisplay(userData) {
+            const container = document.getElementById('endingsList');
+            if (!container) return;
+            
+            const endings = userData.endings || [];
+            
+            if (endings.length === 0) {
+                container.innerHTML = '<span style="color: #555;">暂无，继续探索吧</span>';
+                return;
+            }
+            
+            // 检查是否获得真结局
+            const hasTrueEnding = endings.includes('true') || (isTrueEndingMode && endings.length >= 4);
+            let displayEndings = [...endings];
+            
+            if (hasTrueEnding && !displayEndings.includes('true')) {
+                displayEndings.push('true');
+            }
+            
+            container.innerHTML = displayEndings.map(e => {
+                const name = endingsMap[e] || e;
+                const isSpecial = e === 'true';
+                return `<span class="ending-badge ${isSpecial ? 'special' : ''}">${name}</span>`;
+            }).join('');
+        }
+
+        // 监听来自父页面的消息（结局更新）
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'updateEndings') {
+                const saved = localStorage.getItem('hee_archive_user');
+                if (saved) {
+                    const userData = JSON.parse(saved);
+                    updateEndingsDisplay(userData);
+                    loadUserData(); // 刷新全部
+                }
+            }
+        });
+
+        // 监听 localStorage 变化
         window.addEventListener('storage', function(e) {
             if (e.key === 'hee_archive_user') {
                 loadUserData();
             }
         });
+
+        // 定期刷新
+        setInterval(() => {
+            loadUserData();
+        }, 3000);
+
+        // 初始化
+        loadUserData();
     </script>
 </body>
 </html>
