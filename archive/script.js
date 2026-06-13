@@ -1,16 +1,14 @@
 // ==========================================
-// HEE_ARCHIVE v3.0 - 完整修复版
-// 修复：刷新丢失聊天记录 + 每日内容解锁
+// HEE_ARCHIVE v3.0 - 完整结局系统 + 痕迹结局触发桌面提示
 // ==========================================
 
-// ========== 全局状态 ==========
 let currentUser = {
     visitCount: 0,
     firstVisit: null,
     lastLogin: null,
     unlockedPages: [],
     conversations: [],
-    chatHistory: [],        // 新增：保存聊天记录
+    chatHistory: [],
     endings: [],
     familiarity: 0,
     day: 1,
@@ -30,8 +28,10 @@ let currentUser = {
     curiosityLevel: 0,
     stayLevel: 0,
     endingsTriggered: [],
-    dailyConversations: {},   // 记录每天聊过的话题
-    trashReadCount: 0
+    dailyConversations: {},
+    trashReadCount: 0,
+    gameEnded: false,
+    hasShownTraceHint: false
 };
 
 let isChatActive = false;
@@ -139,8 +139,7 @@ const dialogueTree = {
         conversations: [
             { question: "你会记得我吗？", answer: "会。你会忘了我吗。", fam: 12, tendency: 'stay' },
             { question: "你得到了什么？", answer: "得到了你。……就够了。", fam: 15, tendency: 'stay' },
-            { question: "你有什么想对我说的？", answer: "谢谢。不是谢谢你来这里。是谢谢你待了那么久。", fam: 15, tendency: 'stay' },
-            { question: "（输入你的回答）", answer: null, fam: 0, freeInput: true }
+            { question: "你有什么想对我说的？", answer: "谢谢。不是谢谢你来这里。是谢谢你待了那么久。", fam: 15, tendency: 'stay' }
         ]
     }
 };
@@ -149,18 +148,24 @@ const dialogueTree = {
 document.addEventListener('DOMContentLoaded', () => {
     SFX.init();
     loadUserData();
+    
+    if (currentUser.gameEnded) {
+        showGameEndedScreen();
+        return;
+    }
+    
     updateUI();
     setupListeners();
     updateDayDisplay();
     startAutoSave();
     trackLateNight();
-    restoreChatHistory();  // 新增：恢复聊天记录
+    restoreChatHistory();
+    checkTraceEndingHint();
 
-    console.log('%c🦌 HEE v3.0 · 完整修复版', 'color: #ffd966; font-size: 14px;');
+    console.log('%c🦌 HEE v3.0 · 完整结局系统', 'color: #ffd966; font-size: 14px;');
 
     setTimeout(() => {
         showChatWindow();
-        // 如果今天还没有开始对话，触发开始
         if (!currentUser.dayGreetingSent && canTalk()) {
             triggerDayStart();
         } else if (currentUser.dayGreetingSent && canTalk()) {
@@ -171,24 +176,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
 });
 
-// 恢复聊天记录
+function showGameEndedScreen() {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;background:#0a0a0a;color:#555;font-family:monospace;">
+                <div style="font-size:64px;margin-bottom:20px;">🔒</div>
+                <div style="font-size:18px;margin-bottom:10px;">ACCESS DENIED</div>
+                <div style="font-size:12px;">这个网站已经关闭。</div>
+                <div style="font-size:11px;margin-top:20px;color:#333;">—— 李羲承</div>
+                <button id="backToDesktop" style="margin-top:30px;padding:8px 20px;background:#2a2a2a;border:1px solid #ffd966;color:#ffd966;border-radius:20px;cursor:pointer;">返回桌面</button>
+            </div>
+        `;
+        document.getElementById('backToDesktop')?.addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+    }
+}
+
+function checkTraceEndingHint() {
+    const hasTraceEnding = currentUser.endings.includes('trace');
+    if (hasTraceEnding && !currentUser.hasShownTraceHint) {
+        currentUser.hasShownTraceHint = true;
+        saveUserData();
+        localStorage.setItem('trace_ending_triggered', 'true');
+        showNotification('✨ 痕迹结局已达成！回到桌面看看吧 ✨', 5000);
+        setTimeout(() => {
+            window.location.href = '../index.html';
+        }, 3000);
+    }
+}
+
 function restoreChatHistory() {
     const container = document.getElementById('chatMessages');
     if (!container) return;
-    
     container.innerHTML = '';
     if (currentUser.chatHistory && currentUser.chatHistory.length > 0) {
         currentUser.chatHistory.forEach(msg => {
             const div = document.createElement('div');
             div.className = `chat-message ${msg.sender === 'user' ? 'self' : ''} ${msg.isSystem ? 'system' : ''}`;
-            if (msg.content?.includes('\n')) {
-                msg.content.split('\n').forEach((line, i) => {
-                    if (i > 0) div.appendChild(document.createElement('br'));
-                    div.appendChild(document.createTextNode(line));
-                });
-            } else {
-                div.textContent = msg.content;
-            }
+            div.textContent = msg.content;
             container.appendChild(div);
         });
         container.scrollTop = container.scrollHeight;
@@ -199,16 +226,8 @@ function restoreChatHistory() {
 
 function addToChatHistory(sender, content, isSystem = false) {
     if (!currentUser.chatHistory) currentUser.chatHistory = [];
-    currentUser.chatHistory.push({
-        sender: sender,
-        content: content,
-        isSystem: isSystem,
-        time: Date.now()
-    });
-    // 只保留最近200条
-    if (currentUser.chatHistory.length > 200) {
-        currentUser.chatHistory = currentUser.chatHistory.slice(-200);
-    }
+    currentUser.chatHistory.push({ sender, content, isSystem, time: Date.now() });
+    if (currentUser.chatHistory.length > 200) currentUser.chatHistory = currentUser.chatHistory.slice(-200);
     saveUserData();
 }
 
@@ -220,7 +239,6 @@ function trackLateNight() {
     }
 }
 
-// ========== 存储 ==========
 function loadUserData() {
     const saved = localStorage.getItem('hee_archive_v3');
     if (saved) {
@@ -241,33 +259,14 @@ function loadUserData() {
 
 function resetUser() {
     currentUser = {
-        visitCount: 1,
-        firstVisit: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        unlockedPages: [],
-        conversations: [],
-        chatHistory: [],
-        endings: [],
-        familiarity: 0,
-        day: 1,
-        messagesToday: 0,
-        maxMessages: 5,
-        dayGreetingSent: false,
-        viewedPages: [],
-        fileTriggers: {},
-        lateNightCount: 0,
-        pageReadCount: {},
-        favClickCount: 0,
-        photoRepairedCount: 0,
-        audioPlayCount: 0,
-        profileAnswer: null,
-        chosenOptions: [],
-        comfortLevel: 0,
-        curiosityLevel: 0,
-        stayLevel: 0,
-        endingsTriggered: [],
-        dailyConversations: {},
-        trashReadCount: 0
+        visitCount: 1, firstVisit: new Date().toISOString(), lastLogin: new Date().toISOString(),
+        unlockedPages: [], conversations: [], chatHistory: [], endings: [], familiarity: 0,
+        day: 1, messagesToday: 0, maxMessages: 5, dayGreetingSent: false,
+        viewedPages: [], fileTriggers: {}, lateNightCount: 0, pageReadCount: {},
+        favClickCount: 0, photoRepairedCount: 0, audioPlayCount: 0, profileAnswer: null,
+        chosenOptions: [], comfortLevel: 0, curiosityLevel: 0, stayLevel: 0,
+        endingsTriggered: [], dailyConversations: {}, trashReadCount: 0,
+        gameEnded: false, hasShownTraceHint: false
     };
 }
 
@@ -282,27 +281,16 @@ function saveUserData() {
 }
 
 function startAutoSave() { setInterval(saveUserData, 30000); }
+function canTalk() { return currentUser.messagesToday < currentUser.maxMessages; }
+function usedTalk() { currentUser.messagesToday++; currentUser.dayGreetingSent = true; saveUserData(); updateDayDisplay(); }
 
-function canTalk() { 
-    return currentUser.messagesToday < currentUser.maxMessages; 
-}
-
-function usedTalk() {
-    currentUser.messagesToday++;
-    currentUser.dayGreetingSent = true;
-    saveUserData();
-    updateDayDisplay();
-}
-
-// ========== 关机推进系统 ==========
 function shutdownAndAdvance() {
     if (currentUser.day >= 7) {
-        showNotification('✨ 第七天已经结束。感谢你的陪伴。', 3000);
+        checkAndTriggerAllEndings();
         return false;
     }
 
     SFX.shutdown();
-    
     const overlay = document.createElement('div');
     overlay.id = 'shutdownOverlay';
     overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:99999;opacity:0;transition:opacity 1.5s;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:'Courier New',monospace;color:#444;`;
@@ -314,10 +302,9 @@ function shutdownAndAdvance() {
         currentUser.day++;
         currentUser.messagesToday = 0;
         currentUser.dayGreetingSent = false;
-        currentUser.dailyConversations = {};  // 重置每日对话记录
+        currentUser.dailyConversations = {};
         applyDayConfig();
         
-        // 解锁该天对应的页面
         const cfg = dayConfig[currentUser.day];
         if (cfg && cfg.unlock && !currentUser.unlockedPages.includes(cfg.unlock)) {
             currentUser.unlockedPages.push(cfg.unlock);
@@ -334,20 +321,15 @@ function shutdownAndAdvance() {
             setTimeout(() => {
                 overlay.style.opacity = '0';
                 setTimeout(() => overlay.remove(), 1500);
-                
-                // 清空聊天记录显示（但保留存储）
                 const msgs = document.getElementById('chatMessages');
                 const opts = document.getElementById('chatOptions');
                 if (msgs) msgs.innerHTML = '<div class="chat-system">对话已建立连接...</div>';
                 if (opts) opts.innerHTML = '';
                 currentUser.chatHistory = [];
                 saveUserData();
-                
                 showChatWindow();
                 updateDayDisplay();
                 updateUI();
-                
-                // 触发新一天对话
                 setTimeout(() => triggerDayStart(), 1000);
             }, 2000);
         }, 800);
@@ -360,32 +342,23 @@ function getDayLabel() {
     return labels[currentUser.day] || `第 ${currentUser.day} 天`;
 }
 
-// ========== 每日开始对话 ==========
 function triggerDayStart() {
     if (currentUser.dayGreetingSent) return;
     if (!canTalk()) return;
-    
     usedTalk();
     const dayData = dialogueTree[currentUser.day] || dialogueTree[7];
-    
     showChatMessage('heeseung', dayData.greeting);
-    
-    setTimeout(() => {
-        showDailyOptions();
-    }, 1200);
+    setTimeout(() => showDailyOptions(), 1200);
 }
 
 function handleTendency(tendency, optionKey) {
     if (tendency === 'comfort') currentUser.comfortLevel++;
     if (tendency === 'curiosity') currentUser.curiosityLevel++;
     if (tendency === 'stay') currentUser.stayLevel++;
-    if (optionKey && !currentUser.chosenOptions.includes(optionKey)) {
-        currentUser.chosenOptions.push(optionKey);
-    }
+    if (optionKey && !currentUser.chosenOptions.includes(optionKey)) currentUser.chosenOptions.push(optionKey);
     saveUserData();
 }
 
-// ========== 每日对话选项 ==========
 function showDailyOptions() {
     if (!canTalk()) {
         showChatMessage('system', '⏳ 今天聊了很多了。点击「关机」推进到下一天吧。', true);
@@ -400,13 +373,9 @@ function showDailyOptions() {
         return;
     }
     
-    // 获取今天还没有聊过的话题
     const dayKey = `day_${currentUser.day}`;
     const talkedQuestions = currentUser.dailyConversations[dayKey] || [];
-    
-    const remaining = dayData.conversations.filter(c => 
-        !talkedQuestions.includes(c.question)
-    );
+    const remaining = dayData.conversations.filter(c => !talkedQuestions.includes(c.question));
     
     if (remaining.length === 0) {
         showChatMessage('heeseung', '……今天就到这里吧。');
@@ -414,7 +383,6 @@ function showDailyOptions() {
         return;
     }
     
-    // 随机选3-4个未聊过的话题
     const shuffled = [...remaining];
     for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -429,78 +397,21 @@ function showDailyOptions() {
             usedTalk();
             SFX.click();
             showChatMessage('user', conv.question);
-            
-            // 记录已聊话题
-            if (!currentUser.dailyConversations[dayKey]) {
-                currentUser.dailyConversations[dayKey] = [];
-            }
+            if (!currentUser.dailyConversations[dayKey]) currentUser.dailyConversations[dayKey] = [];
             currentUser.dailyConversations[dayKey].push(conv.question);
-            
             handleTendency(conv.tendency, conv.optionKey);
-            
             setTimeout(() => {
                 if (conv.answer) {
                     showChatMessage('heeseung', conv.answer);
                     increaseFamiliarity(conv.fam);
-                } else if (conv.freeInput) {
-                    triggerFreeInput();
-                    return;
                 }
-                currentUser.conversations.push({ 
-                    question: conv.question, 
-                    day: currentUser.day, 
-                    time: Date.now() 
-                });
+                currentUser.conversations.push({ question: conv.question, day: currentUser.day, time: Date.now() });
                 saveUserData();
-                checkEndings();
-                // 继续显示下一轮选项
                 setTimeout(() => showDailyOptions(), 800);
             }, 800);
         }
     }));
-    
     showChatOptions(options);
-}
-
-function triggerFreeInput() {
-    const chatOptions = document.getElementById('chatOptions');
-    const inputArea = document.getElementById('chatInputArea');
-    if (chatOptions) chatOptions.innerHTML = '';
-    if (inputArea) {
-        inputArea.classList.remove('hidden');
-        const inp = document.getElementById('chatInput');
-        if (inp) { inp.placeholder = '输入你的回答……'; inp.value = ''; inp.focus(); }
-    }
-
-    const send = document.getElementById('chatSend');
-    const inp = document.getElementById('chatInput');
-    if (send && inp) {
-        const handler = () => {
-            const text = inp.value.trim();
-            if (!text) return;
-            SFX.msg();
-            showChatMessage('user', text);
-            inp.value = '';
-            if (inputArea) inputArea.classList.add('hidden');
-
-            setTimeout(() => {
-                showChatMessage('heeseung', '谢谢你。\n这是我能给的……最后的东西。');
-                increaseFamiliarity(20);
-                saveUserData();
-                checkEndings();
-                setTimeout(() => {
-                    if (!currentUser.endings.includes('trace')) {
-                        triggerEnding('trace');
-                    }
-                }, 1500);
-            }, 1200);
-
-            send.removeEventListener('click', handler);
-        };
-        send.replaceWith(send.cloneNode(true));
-        document.getElementById('chatSend').addEventListener('click', handler);
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter') handler(); });
-    }
 }
 
 function increaseFamiliarity(amount) {
@@ -513,7 +424,6 @@ function showShutdownOption() {
     const container = document.getElementById('chatOptions');
     if (!container) return;
     container.innerHTML = '';
-    
     const btn = document.createElement('button');
     btn.className = 'chat-option-btn';
     btn.style.cssText = 'border-color: #ffd966; color: #ffd966; width: 100%; text-align: center; font-size: 13px; padding: 10px;';
@@ -527,8 +437,7 @@ function showShutdownOption() {
     container.appendChild(btn);
 }
 
-// ========== 结局系统 ==========
-function checkEndings() {
+function checkAndTriggerAllEndings() {
     const allPagesUnlocked = ['profile','photo','letters','playlog','clock'].every(p => currentUser.unlockedPages.includes(p));
     const hasReadTrash = (currentUser.trashReadCount || 0) >= 4;
     const hasReadLog = currentUser.viewedPages.includes('log');
@@ -538,66 +447,65 @@ function checkEndings() {
     const hasProfile = !!currentUser.profileAnswer;
     const hasStayChoice = currentUser.chosenOptions.includes('will_stay') || currentUser.chosenOptions.includes('promise');
     
-    // 月光
-    if (currentUser.lateNightCount >= 4 && currentUser.chosenOptions.includes('night_lover') && !currentUser.endings.includes('moonlight')) {
-        triggerEnding('moonlight');
-    }
+    let endingsTriggered = [];
+    if (currentUser.lateNightCount >= 4 && currentUser.chosenOptions.includes('night_lover')) endingsTriggered.push('moonlight');
+    if (allPagesUnlocked && hasReadTrash && hasReadLog && hasListenedAudio && hasRepairedPhoto) endingsTriggered.push('reader');
+    if (currentUser.favClickCount >= 8 && hasMusicChoice && hasProfile) endingsTriggered.push('resonance');
+    if (hasStayChoice && currentUser.familiarity >= 100) endingsTriggered.push('trace');
     
-    // 读者
-    if (allPagesUnlocked && hasReadTrash && hasReadLog && hasListenedAudio && hasRepairedPhoto && !currentUser.endings.includes('reader')) {
-        triggerEnding('reader');
-    }
-    
-    // 共鸣
-    if (currentUser.favClickCount >= 8 && hasMusicChoice && hasProfile && !currentUser.endings.includes('resonance')) {
-        triggerEnding('resonance');
-    }
-    
-    // 痕迹
-    if (hasStayChoice && currentUser.familiarity >= 100 && currentUser.day >= 7 && !currentUser.endings.includes('trace')) {
-        triggerEnding('trace');
+    if (endingsTriggered.length > 0) {
+        triggerNormalEnding(endingsTriggered);
+    } else {
+        showNotification('⚠️ 没有触发任何结局。再试试吧。', 3000);
     }
 }
 
-function triggerEnding(type) {
-    if (currentUser.endings.includes(type)) return;
-    
-    const endings = {
-        moonlight: { title: '🌙 月光', message: '你总是在深夜来。我也是。我们在同一个月亮下面。', dialog: '你每次都这么晚。\n\n凌晨的时候，想法会比较真实。\n谢谢你在这些时间里来这边。' },
-        reader: { title: '📖 读者', message: '你读完了每一个字。谢谢你看完。', dialog: '你都看完了。\n\n很少有人会这样。\n谢谢你不是谢谢你来这里。是谢谢你认真看了。' },
-        resonance: { title: '🎵 共鸣', message: '你喜欢的和我一样吗。如果是你，好像也没关系。', dialog: '你点了很多次。\n\n我在想你是不是和我喜欢一样的东西。\n如果是你...好像也没关系。' },
-        trace: { title: '🕯️ 痕迹', message: '你找到的不是一个人的秘密。而是一个人愿意留下来的痕迹。', dialog: '你找到了。\n不是一个人的秘密。\n是一个人愿意留下来的痕迹。' }
-    };
-    
-    const ending = endings[type];
-    currentUser.endings.push(type);
+function triggerNormalEnding(endings) {
+    currentUser.gameEnded = true;
+    if (endings.includes('trace')) {
+        localStorage.setItem('trace_ending_triggered', 'true');
+    }
     saveUserData();
     SFX.ending();
     
-    showChatMessage('system', `✨ 结局解锁：${ending.title} ✨`, true);
-    showChatMessage('heeseung', ending.dialog);
+    const endingNames = { moonlight:'🌙 月光', reader:'📖 读者', resonance:'🎵 共鸣', trace:'🕯️ 痕迹' };
+    const endingList = endings.map(e => endingNames[e]).join('、');
+    
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:100000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:'Courier New',monospace;color:#ffd966;text-align:center;`;
+    overlay.innerHTML = `
+        <div style="font-size:80px;margin-bottom:30px;">🦌</div>
+        <div style="font-size:28px;margin-bottom:20px;">结局达成</div>
+        <div style="font-size:16px;margin-bottom:40px;color:#ccc;">${endingList}</div>
+        <div style="font-size:13px;line-height:1.8;max-width:400px;margin-bottom:40px;">${getEndingMessage(endings[0])}</div>
+        <div style="font-size:11px;color:#666;">即将返回桌面...</div>
+    `;
+    document.body.appendChild(overlay);
+    
+    setTimeout(() => {
+        window.location.href = '../index.html';
+    }, 4000);
 }
 
-// ========== UI 函数 ==========
+function getEndingMessage(ending) {
+    const messages = {
+        moonlight: '你总是在深夜来。\n我们在同一个月亮下面。',
+        reader: '你读完了每一个字。\n谢谢你认真看了。',
+        resonance: '你喜欢的和我一样。\n谢谢你觉得我值得被了解。',
+        trace: '你找到的不是一个人的秘密。\n而是一个人愿意留下来的痕迹。\n那个痕迹，是你。'
+    };
+    return messages[ending] || '谢谢你。';
+}
+
 function showChatMessage(sender, content, isSystem = false) {
     const container = document.getElementById('chatMessages');
     if (!container) return;
     if (sender !== 'system') SFX.msg();
-    
     const div = document.createElement('div');
     div.className = `chat-message ${sender === 'user' ? 'self' : ''} ${isSystem ? 'system' : ''}`;
-    if (content?.includes('\n')) {
-        content.split('\n').forEach((line, i) => {
-            if (i > 0) div.appendChild(document.createElement('br'));
-            div.appendChild(document.createTextNode(line));
-        });
-    } else {
-        div.textContent = content;
-    }
+    div.textContent = content;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
-    
-    // 保存到历史记录
     addToChatHistory(sender, content, isSystem);
 }
 
@@ -626,9 +534,7 @@ function showChatWindow() {
 function updateUI() {
     document.querySelectorAll('.nav-item').forEach(item => {
         const page = item.getAttribute('data-page');
-        if (currentUser.unlockedPages?.includes(page)) {
-            item.classList.remove('locked');
-        }
+        if (currentUser.unlockedPages?.includes(page)) item.classList.remove('locked');
     });
     updateStatusBar();
 }
@@ -671,7 +577,6 @@ function updateFamiliarityDisplay() {
     else if (f < 75) { text = '愿意分享'; emoji = '💭'; color = '#ccaa6e'; }
     else if (f < 90) { text = '已经认识'; emoji = '🦌'; color = '#e6c966'; }
     else { text = '不愿失去'; emoji = '⏳'; color = '#ffd966'; }
-
     const header = document.querySelector('.chat-header');
     if (header) {
         let bar = header.querySelector('.familiarity-bar');
@@ -689,7 +594,6 @@ function updateOnlineStatus() {
     txt.textContent = currentUser.familiarity >= 80 ? 'ONLINE - Lee Heeseung' : currentUser.familiarity >= 35 ? 'ONLINE - Connected' : 'OFFLINE';
 }
 
-// ========== 事件监听 ==========
 function setupListeners() {
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -704,11 +608,9 @@ function setupListeners() {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             item.classList.add('active');
             loadPage(page);
-            
             if (!currentUser.viewedPages.includes(page)) {
                 currentUser.viewedPages.push(page);
                 saveUserData();
-                checkEndings();
             }
         });
         item.addEventListener('mouseenter', () => SFX.hover());
@@ -769,40 +671,16 @@ function showNotification(msg, dur = 3000) {
     setTimeout(() => n.classList.add('hidden'), dur);
 }
 
-// ========== 外部调用 ==========
-window.increaseFavClick = function() {
-    currentUser.favClickCount++;
-    saveUserData();
-    checkEndings();
-};
+window.increaseFavClick = function() { currentUser.favClickCount++; saveUserData(); };
+window.repairPhoto = function() { currentUser.photoRepairedCount++; saveUserData(); };
+window.playAudio = function() { currentUser.audioPlayCount++; saveUserData(); };
+window.saveProfileAnswer = function(answer) { currentUser.profileAnswer = answer; saveUserData(); };
+window.markTrashRead = function(count) { currentUser.trashReadCount = count; saveUserData(); };
 
-window.repairPhoto = function() {
-    currentUser.photoRepairedCount++;
-    saveUserData();
-    checkEndings();
-};
-
-window.playAudio = function() {
-    currentUser.audioPlayCount++;
-    saveUserData();
-    checkEndings();
-};
-
-window.saveProfileAnswer = function(answer) {
-    currentUser.profileAnswer = answer;
-    saveUserData();
-    checkEndings();
-};
-
-window.markTrashRead = function(count) {
-    currentUser.trashReadCount = count;
-    saveUserData();
-    checkEndings();
-};
-
-// ========== 调试 ==========
 window.resetGame = () => {
     localStorage.removeItem('hee_archive_v3');
+    localStorage.removeItem('trace_ending_triggered');
+    localStorage.removeItem('secret_ending_triggered');
     resetUser();
     saveUserData();
     location.reload();
