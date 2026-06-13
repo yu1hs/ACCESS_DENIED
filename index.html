@@ -21,15 +21,6 @@
             100% { transform: translate(0); }
         }
         .glitch-effect { animation: glitch 0.3s ease-in-out; }
-        @keyframes heartBeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-        .heart-beat { animation: heartBeat 0.5s ease-in-out; }
-        @keyframes floatHeart {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
-        }
         @keyframes fadeInModal {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -42,61 +33,6 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
-        .virtual-keyboard {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .virtual-key-btn {
-            width: 55px;
-            height: 55px;
-            background: rgba(30,30,40,0.95);
-            backdrop-filter: blur(8px);
-            border: 1px solid #ffd966;
-            border-radius: 28px;
-            color: #ffd966;
-            font-size: 22px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        .virtual-key-btn:active {
-            background: #3a6ea5;
-            transform: scale(0.95);
-        }
-        .virtual-keyboard .close-btn {
-            background: rgba(50,50,60,0.95);
-            border-color: #888;
-            color: #888;
-            font-size: 18px;
-        }
-        .mobile-easter-btn {
-            position: fixed;
-            bottom: 120px;
-            left: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255,102,170,0.9);
-            border: none;
-            border-radius: 25px;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-        .mobile-easter-btn:active { transform: scale(0.95); }
         .ripple {
             position: fixed;
             border-radius: 50%;
@@ -107,197 +43,468 @@
             z-index: 10000;
         }
         @keyframes ripple { to { transform: scale(4); opacity: 0; } }
-        @media (max-width: 768px) {
-            .mobile-easter-btn { display: flex; }
-            .virtual-keyboard { bottom: 100px; right: 10px; }
-            .virtual-key-btn { width: 48px; height: 48px; font-size: 20px; }
-        }
-        @media (max-width: 480px) {
-            .virtual-key-btn { width: 42px; height: 42px; font-size: 18px; }
-            .mobile-easter-btn { width: 44px; height: 44px; font-size: 20px; bottom: 110px; }
-        }
     </style>
 </head>
 <body>
     <div class="wallpaper"></div>
+    
     <div class="desktop-icons">
-        <div class="desktop-icon" data-folder="documents"><div class="icon-folder">📁</div><span class="icon-label">Documents</span></div>
-        <div class="desktop-icon" data-folder="downloads"><div class="icon-folder">📁</div><span class="icon-label">Downloads</span></div>
-        <div class="desktop-icon" data-folder="recycle"><div class="icon-folder">🗑️</div><span class="icon-label">Recycle Bin</span></div>
-        <div class="desktop-icon archive-icon" data-folder="archive"><div class="icon-folder" id="archiveFolderIcon">❓</div><span class="icon-label" id="archiveLabel">HEE</span></div>
+        <div class="desktop-icon" data-folder="documents">
+            <div class="icon-folder">📁</div>
+            <span class="icon-label">Documents</span>
+        </div>
+        <div class="desktop-icon" data-folder="downloads">
+            <div class="icon-folder">📁</div>
+            <span class="icon-label">Downloads</span>
+        </div>
+        <div class="desktop-icon" data-folder="recycle">
+            <div class="icon-folder">🗑️</div>
+            <span class="icon-label">Recycle Bin</span>
+        </div>
+        <div class="desktop-icon archive-icon" data-folder="archive">
+            <div class="icon-folder" id="archiveFolderIcon">❓</div>
+            <span class="icon-label" id="archiveLabel">HEE</span>
+        </div>
     </div>
+
     <div class="taskbar">
         <div class="start-btn">🖥️</div>
         <div class="taskbar-time" id="taskbarTime">--:--</div>
         <div class="network-status">🌐 已连接</div>
         <div class="deer-icon" id="deerIcon">🦌</div>
     </div>
-    <div id="virtualKeyboard" class="virtual-keyboard" style="display: none;">
-        <div class="virtual-key-btn" data-key="h">H</div>
-        <div class="virtual-key-btn" data-key="e">E</div>
-        <div class="virtual-key-btn" data-key="e2">E</div>
-        <div class="virtual-key-btn" data-key="s">S</div>
-        <div class="virtual-key-btn" data-key="e3">E</div>
-        <div class="virtual-key-btn" data-key="u">U</div>
-        <div class="virtual-key-btn" data-key="n">N</div>
-        <div class="virtual-key-btn" data-key="g">G</div>
-        <div class="virtual-key-btn close-btn" id="closeKeyboard">✕</div>
-    </div>
-    <div id="mobileEasterBtn" class="mobile-easter-btn">✨</div>
+
+    <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu hidden">
         <div class="context-item" id="menuDelete">删除</div>
         <div class="context-item" id="menuProperties">属性</div>
         <div class="context-item" id="menuRestart">💜 重新认识一次吧？</div>
         <div class="context-item" id="revealSecret">🔓 显示隐藏文件夹</div>
     </div>
+
+    <!-- 密码对话框 -->
     <div id="passwordDialog" class="dialog hidden">
         <div class="dialog-content">
             <h3>🔒 验证身份</h3>
             <p style="font-size:12px;color:#888;margin-bottom:15px;">这个文件夹需要密码才能打开。</p>
             <input type="password" id="passwordInput" placeholder="输入密码" style="width:100%;padding:8px;background:#1a1a1a;border:1px solid #4a4a4a;color:white;border-radius:6px;">
-            <div class="dialog-buttons" style="margin-top:15px;"><button id="submitPassword">确定</button><button id="cancelPassword">取消</button></div>
+            <div class="dialog-buttons" style="margin-top:15px;">
+                <button id="submitPassword">确定</button>
+                <button id="cancelPassword">取消</button>
+            </div>
         </div>
     </div>
-    <div id="deleteDialog" class="dialog hidden"><div class="dialog-content"><p id="deleteMessage">确定要删除此文件夹吗？</p><div class="dialog-buttons"><button id="confirmDelete">确定</button><button id="cancelDelete">取消</button></div></div></div>
-    <div id="propertiesDialog" class="dialog hidden"><div class="dialog-content"><h3>📁 HEE 属性</h3><div class="prop-row"><span class="prop-label">类型：</span><span>文件夹</span></div><div class="prop-row"><span class="prop-label">位置：</span><span>C:\Users\Unknown\Desktop</span></div><div class="prop-row"><span class="prop-label">大小：</span><span id="propSize">计算中...</span></div><div class="prop-row"><span class="prop-label">创建时间：</span><span>无法读取</span></div><div class="prop-row"><span class="prop-label">修改时间：</span><span>无法读取</span></div><div class="prop-row"><span class="prop-label">属性：</span><span>🔒 只读 · 🔒 隐藏 · 🔒 系统</span></div><div class="creator-note" id="creatorNote"></div><button id="closeProperties" class="dialog-close">关闭</button></div></div>
+
+    <div id="deleteDialog" class="dialog hidden">
+        <div class="dialog-content">
+            <p id="deleteMessage">确定要删除此文件夹吗？</p>
+            <div class="dialog-buttons">
+                <button id="confirmDelete">确定</button>
+                <button id="cancelDelete">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="propertiesDialog" class="dialog hidden">
+        <div class="dialog-content">
+            <h3>📁 HEE 属性</h3>
+            <div class="prop-row"><span class="prop-label">类型：</span><span>文件夹</span></div>
+            <div class="prop-row"><span class="prop-label">位置：</span><span>C:\Users\Unknown\Desktop</span></div>
+            <div class="prop-row"><span class="prop-label">大小：</span><span id="propSize">计算中...</span></div>
+            <div class="prop-row"><span class="prop-label">创建时间：</span><span>无法读取</span></div>
+            <div class="prop-row"><span class="prop-label">修改时间：</span><span>无法读取</span></div>
+            <div class="prop-row"><span class="prop-label">属性：</span><span>🔒 只读 · 🔒 隐藏 · 🔒 系统</span></div>
+            <div class="creator-note" id="creatorNote"></div>
+            <button id="closeProperties" class="dialog-close">关闭</button>
+        </div>
+    </div>
+
     <div id="notification" class="notification hidden"></div>
-    <div id="bootScreen" class="boot-screen"><div class="boot-text"><div>Booting...</div><div>Loading Windows...</div><div>Loading personal settings...</div><div class="boot-done">Welcome.</div></div></div>
+    <div id="bootScreen" class="boot-screen">
+        <div class="boot-text">
+            <div>Booting...</div>
+            <div>Loading Windows...</div>
+            <div>Loading personal settings...</div>
+            <div class="boot-done">Welcome.</div>
+        </div>
+    </div>
+
     <button id="desktopRestartBtn" class="desktop-restart-btn">💜 重新认识一次吧？</button>
-    <div id="dependencyBar" class="dependency-bar-container" style="display:none;"><div class="dependency-label"><span>💜 依赖度</span><span id="dependencyValue">0%</span></div><div class="dependency-bar" id="dependencyFill"></div></div>
+
+    <div id="dependencyBar" class="dependency-bar-container" style="display:none;">
+        <div class="dependency-label">
+            <span>💜 依赖度</span>
+            <span id="dependencyValue">0%</span>
+        </div>
+        <div class="dependency-bar" id="dependencyFill"></div>
+    </div>
 
     <script>
+        // ========== 检测设备 ==========
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        let deleteAttempts = 0, notificationTimeout, bootCompleted = false, folderClickCount = 0, folderClickTimer = null;
-        let virtualInputString = '', keyboardInputString = '';
         
-        function showHeeseungEasterEgg() {
-            const existing = document.getElementById('heeseungEasterEgg');
+        // ========== 变量 ==========
+        let deleteAttempts = 0;
+        let notificationTimeout;
+        let bootCompleted = false;
+        let folderClickCount = 0;
+        let folderClickTimer = null;
+        let deerClickCount = 0;
+        let deerClickTimer = null;
+        
+        // ========== 弹窗函数 ==========
+        function showModal(title, message, emoji = '✨') {
+            const existing = document.getElementById('customModal');
             if (existing) existing.remove();
-            const overlay = document.createElement('div');
-            overlay.id = 'heeseungEasterEgg';
-            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a0a2a,#0a0a0a);z-index:30000;display:flex;align-items:center;justify-content:center;animation:fadeInModal 0.5s ease;';
-            overlay.innerHTML = `<div style="background:rgba(20,20,30,0.95);border:2px solid #ffd966;border-radius:32px;padding:40px;max-width:400px;text-align:center;box-shadow:0 0 60px rgba(255,217,102,0.3);animation:scaleIn 0.4s ease;margin:20px;">
-                <div style="font-size:80px;margin-bottom:20px;animation:float 3s ease-in-out infinite;">🦌</div>
-                <div style="font-size:28px;color:#ffd966;margin-bottom:20px;letter-spacing:4px;">LEE HEESEUNG</div>
-                <div style="font-size:16px;line-height:1.8;color:#ddd;margin:20px 0;">"嗯？<br>在找我？<br>我就在这里。"</div>
-                <button id="closeHeeseungEgg" style="margin-top:30px;padding:10px 30px;background:#ffd966;color:#0a0a0a;border:none;border-radius:30px;font-size:14px;font-weight:bold;cursor:pointer;">继续游戏</button>
-            </div>`;
-            document.body.appendChild(overlay);
-            document.getElementById('closeHeeseungEgg').onclick = () => { overlay.remove(); window.location.reload(); };
-            try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = 440; g.gain.setValueAtTime(0.1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 1); setTimeout(() => ctx.close(), 1100); } catch(e) {}
+            
+            const modal = document.createElement('div');
+            modal.id = 'customModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.85);
+                backdrop-filter: blur(8px);
+                z-index: 20000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: fadeInModal 0.3s ease;
+            `;
+            modal.innerHTML = `
+                <div style="
+                    background: linear-gradient(135deg, #1a1a2a, #0a0a0a);
+                    border: 2px solid #ffd966;
+                    border-radius: 24px;
+                    padding: 30px 40px;
+                    max-width: 350px;
+                    text-align: center;
+                    box-shadow: 0 0 40px rgba(255,217,102,0.2);
+                    animation: scaleIn 0.3s ease;
+                ">
+                    <div style="font-size: 64px; margin-bottom: 16px;">${emoji}</div>
+                    <div style="font-size: 20px; color: #ffd966; margin-bottom: 16px; font-weight: bold;">${title}</div>
+                    <div style="font-size: 13px; color: #ccc; line-height: 1.6; white-space: pre-line;">${message}</div>
+                    <button id="closeModalBtn" style="
+                        margin-top: 24px;
+                        padding: 8px 24px;
+                        background: #ffd966;
+                        color: #0a0a0a;
+                        border: none;
+                        border-radius: 30px;
+                        cursor: pointer;
+                        font-size: 13px;
+                        font-weight: bold;
+                    ">确认</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('closeModalBtn').onclick = () => modal.remove();
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
         }
         
-        function checkKeyboardInput(e) {
-            if (e.key.length === 1 && /[a-zA-Z]/i.test(e.key)) {
-                keyboardInputString += e.key.toLowerCase();
-                if (keyboardInputString.length > 8) keyboardInputString = keyboardInputString.slice(-8);
-                if (keyboardInputString === 'heeseung') { keyboardInputString = ''; showHeeseungEasterEgg(); }
+        // ========== 辅助函数 ==========
+        function showNotification(msg, duration = 3000) {
+            const notif = document.getElementById('notification');
+            notif.textContent = msg;
+            notif.classList.remove('hidden');
+            if (notificationTimeout) clearTimeout(notificationTimeout);
+            notificationTimeout = setTimeout(() => notif.classList.add('hidden'), duration);
+        }
+        
+        function showFloatingEmoji(emoji) {
+            const div = document.createElement('div');
+            div.className = 'floating-emoji';
+            div.textContent = emoji;
+            div.style.left = Math.random() * 80 + 10 + '%';
+            div.style.top = '70%';
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2000);
+        }
+        
+        function updateTime() {
+            document.getElementById('taskbarTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+        }
+        
+        function addRipple(e) {
+            const x = e.clientX;
+            const y = e.clientY;
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.left = x - 25 + 'px';
+            ripple.style.top = y - 25 + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+        
+        // ========== 鹿角连点彩蛋（5次触发弹窗）==========
+        function checkDeerClick(e) {
+            addRipple(e);
+            deerClickCount++;
+            if (deerClickTimer) clearTimeout(deerClickTimer);
+            deerClickTimer = setTimeout(() => { deerClickCount = 0; }, 2000);
+            
+            if (deerClickCount === 3) {
+                showNotification('🦌 再点2次...', 1000);
+            }
+            
+            if (deerClickCount >= 5) {
+                deerClickCount = 0;
+                showModal('🦌 鹿角彩蛋', '你连续点击了鹿角5次\n\n羲承说：\n"你发现了我。"', '🔮');
+                document.body.classList.add('glitch-effect');
+                setTimeout(() => document.body.classList.remove('glitch-effect'), 500);
             }
         }
         
-        function processVirtualInput(key) {
-            virtualInputString += key.toLowerCase();
-            if (virtualInputString.length > 8) virtualInputString = virtualInputString.slice(-8);
-            if (virtualInputString === 'heeseung') { virtualInputString = ''; showHeeseungEasterEgg(); }
+        // ========== 文件夹连点彩蛋（10次）==========
+        function checkFolderClick(e) {
+            addRipple(e);
+            folderClickCount++;
+            if (folderClickTimer) clearTimeout(folderClickTimer);
+            folderClickTimer = setTimeout(() => { folderClickCount = 0; }, 3000);
+            
+            if (folderClickCount === 5) {
+                showNotification('📁 再点5次...', 1000);
+            }
+            
+            if (folderClickCount >= 10) {
+                folderClickCount = 0;
+                showModal('📁 隐藏消息', '你点击了HEE文件夹10次\n\n羲承说：\n"你很执着。\n……我喜欢。"', '💙');
+            }
         }
         
-        function showNotification(msg, d=3000) { const n = document.getElementById('notification'); n.textContent = msg; n.classList.remove('hidden'); if(notificationTimeout) clearTimeout(notificationTimeout); notificationTimeout = setTimeout(() => n.classList.add('hidden'), d); }
-        function showFloatingEmoji(e) { const d = document.createElement('div'); d.className = 'floating-emoji'; d.textContent = e; d.style.left = Math.random() * 80 + 10 + '%'; d.style.top = '70%'; document.body.appendChild(d); setTimeout(() => d.remove(), 2000); }
-        function updateTime() { document.getElementById('taskbarTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' }); }
+        // ========== 手机摇一摇 ==========
+        if (window.DeviceMotionEvent) {
+            let lastShake = 0;
+            window.addEventListener('devicemotion', function(e) {
+                const acc = e.accelerationIncludingGravity;
+                if (acc) {
+                    const shake = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+                    const now = Date.now();
+                    if (shake > 25 && now - lastShake > 3000) {
+                        lastShake = now;
+                        showModal('📱 摇一摇彩蛋', '你摇了摇手机！\n\n羲承说：\n"……你在做什么。"', '📱');
+                    }
+                }
+            });
+        }
         
-        let deerClickCount = 0, deerClickTimer = null;
-        function checkDeerClick() { deerClickCount++; if(deerClickTimer) clearTimeout(deerClickTimer); deerClickTimer = setTimeout(() => { deerClickCount = 0; }, 2000); if(deerClickCount === 3) showNotification('🦌 再点2次...', 1000); if(deerClickCount >= 5) { deerClickCount = 0; showFloatingEmoji('✨'); showNotification('🦌 你发现了鹿角的秘密！', 2000); document.body.classList.add('glitch-effect'); setTimeout(() => document.body.classList.remove('glitch-effect'), 500); } }
+        // ========== 快捷键 ==========
+        function checkShortcuts(e) {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                showNotification('💾 保存到哪里？你心里吗。', 2000);
+            }
+            if (e.key === 'F5') {
+                e.preventDefault();
+                showNotification('🔄 刷新也不会变快', 2000);
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                console.log('%c┌─────────────────────────────────┐', '#555');
+                console.log('%c│          🦌                       │', '#555');
+                console.log('%c│   别拆了。没什么好拆的。           │', '#ffd966');
+                console.log('%c└─────────────────────────────────┘', '#555');
+                showModal('🔍 开发者彩蛋', '你打开了控制台。\n\n这里没有什么秘密。\n……也许有。', '🔧');
+            }
+        }
         
-        function checkFolderClick() { folderClickCount++; if(folderClickTimer) clearTimeout(folderClickTimer); folderClickTimer = setTimeout(() => { folderClickCount = 0; }, 3000); if(folderClickCount === 5) showNotification('📁 再点5次...', 1000); if(folderClickCount >= 10) { folderClickCount = 0; showNotification('📁 你很执着呢', 2000); showFloatingEmoji('💙'); } }
+        // ========== 重置游戏 ==========
+        function resetAllProgress() {
+            if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
+                localStorage.removeItem('hee_archive_dialogue');
+                localStorage.removeItem('trace_ending_triggered');
+                localStorage.removeItem('secret_ending_triggered');
+                localStorage.removeItem('boot_completed');
+                showNotification('✨ 已重置，重新认识羲承吧 ✨', 2000);
+                showFloatingEmoji('🦌');
+                setTimeout(() => { location.reload(); }, 1500);
+            }
+        }
         
-        if (window.DeviceMotionEvent) { let lastShake = 0; window.addEventListener('devicemotion', function(e) { const acc = e.accelerationIncludingGravity; if(acc) { const shake = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z); const now = Date.now(); if(shake > 25 && now - lastShake > 3000) { lastShake = now; showNotification('📱 你摇了摇手机！', 1500); showFloatingEmoji('📱'); } } }); }
+        // ========== 依赖度 ==========
+        function updateDependency() {
+            if (localStorage.getItem('trace_ending_triggered') === 'true') {
+                const bar = document.getElementById('dependencyBar');
+                if (bar) bar.style.display = 'none';
+                return;
+            }
+            const saved = localStorage.getItem('hee_archive_dialogue');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const day = data.day || 1;
+                const dep = Math.min(100, day * 14);
+                const bar = document.getElementById('dependencyBar');
+                const fill = document.getElementById('dependencyFill');
+                const val = document.getElementById('dependencyValue');
+                if (bar && dep > 10) bar.style.display = 'block';
+                if (fill) fill.style.width = dep + '%';
+                if (val) val.textContent = dep + '%';
+            }
+        }
         
-        function checkShortcuts(e) { if(e.ctrlKey && e.key === 's') { e.preventDefault(); showNotification('💾 保存到哪里？你心里吗。', 2000); } if(e.key === 'F5') { e.preventDefault(); showNotification('🔄 刷新也不会变快', 2000); } if(e.ctrlKey && e.shiftKey && e.key === 'I') { e.preventDefault(); console.log('%c┌─────────────────────────────────┐', '#555'); console.log('%c│          🦌                       │', '#555'); console.log('%c│   别拆了。没什么好拆的。           │', '#ffd966'); console.log('%c└─────────────────────────────────┘', '#555'); } }
+        // ========== 启动画面 ==========
+        if (!localStorage.getItem('boot_completed')) {
+            setTimeout(() => {
+                const bootScreen = document.getElementById('bootScreen');
+                bootScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    bootScreen.style.display = 'none';
+                    localStorage.setItem('boot_completed', 'true');
+                    bootCompleted = true;
+                }, 1000);
+            }, 2000);
+        } else {
+            document.getElementById('bootScreen').style.display = 'none';
+            bootCompleted = true;
+        }
         
-        function resetAllProgress() { if(confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) { localStorage.removeItem('hee_archive_dialogue'); localStorage.removeItem('trace_ending_triggered'); localStorage.removeItem('secret_ending_triggered'); localStorage.removeItem('boot_completed'); showNotification('✨ 已重置，重新认识羲承吧 ✨', 2000); showFloatingEmoji('🦌'); setTimeout(() => { location.reload(); }, 1500); } }
-        
-        function updateDependency() { if(localStorage.getItem('trace_ending_triggered') === 'true') { const b = document.getElementById('dependencyBar'); if(b) b.style.display = 'none'; return; } const s = localStorage.getItem('hee_archive_dialogue'); if(s) { const d = JSON.parse(s); const day = d.day || 1; const dep = Math.min(100, day * 14); const bar = document.getElementById('dependencyBar'); const fill = document.getElementById('dependencyFill'); const val = document.getElementById('dependencyValue'); if(bar && dep > 10) bar.style.display = 'block'; if(fill) fill.style.width = dep + '%'; if(val) val.textContent = dep + '%'; } }
-        
-        if(!localStorage.getItem('boot_completed')) { setTimeout(() => { document.getElementById('bootScreen').classList.add('fade-out'); setTimeout(() => { document.getElementById('bootScreen').style.display = 'none'; localStorage.setItem('boot_completed', 'true'); bootCompleted = true; }, 1000); }, 2000); } else { document.getElementById('bootScreen').style.display = 'none'; bootCompleted = true; }
-        
+        // ========== 右键菜单 ==========
         const contextMenu = document.getElementById('contextMenu');
         function hideContextMenu() { contextMenu.classList.add('hidden'); }
         document.addEventListener('click', hideContextMenu);
+        
         const archiveIcon = document.querySelector('.archive-icon');
-        function checkTraceEndingTriggered() { const t = localStorage.getItem('trace_ending_triggered'); const h = localStorage.getItem('secret_ending_triggered'); const label = document.getElementById('archiveLabel'); if(t === 'true' && h !== 'true') { if(label) label.innerHTML = 'HEE<span style="color:#ff6666;font-size:10px;">✨打开它✨</span>'; } if(h === 'true') { if(label) label.innerHTML = 'HEE<span style="color:#4ade80;font-size:10px;">💖</span>'; } }
+        
+        function checkTraceEndingTriggered() {
+            const traceTriggered = localStorage.getItem('trace_ending_triggered');
+            const hiddenEndingDone = localStorage.getItem('secret_ending_triggered');
+            const label = document.getElementById('archiveLabel');
+            if (traceTriggered === 'true' && hiddenEndingDone !== 'true') {
+                if (label) label.innerHTML = 'HEE<span style="color:#ff6666;font-size:10px;">✨打开它✨</span>';
+            }
+            if (hiddenEndingDone === 'true') {
+                if (label) label.innerHTML = 'HEE<span style="color:#4ade80;font-size:10px;">💖</span>';
+            }
+        }
         checkTraceEndingTriggered();
-        archiveIcon.addEventListener('contextmenu', (e) => { e.preventDefault(); contextMenu.style.left = e.pageX + 'px'; contextMenu.style.top = e.pageY + 'px'; contextMenu.classList.remove('hidden'); });
-        archiveIcon.addEventListener('click', () => { checkFolderClick(); });
-        document.getElementById('menuDelete').addEventListener('click', () => { hideContextMenu(); deleteAttempts++; if(deleteAttempts === 1) showNotification('⚠️ 无法删除此文件夹：访问被拒绝'); else if(deleteAttempts === 2) showNotification('❓ 你确定要删吗...算了问了也没用'); else if(deleteAttempts === 3) { showNotification('⚠️ 此文件夹包含系统关键文件，删除可能导致系统不稳定。请勿尝试。——最后一位使用者'); document.getElementById('archiveFolderIcon').textContent = '🔒'; } else showNotification('⛔ 系统保护：此操作已被禁止'); });
-        document.getElementById('menuProperties').addEventListener('click', () => { hideContextMenu(); document.getElementById('propSize').textContent = deleteAttempts >= 2 ? '未知 (受保护)' : '计算中...'; const cn = document.getElementById('creatorNote'); if(deleteAttempts >= 1) cn.innerHTML = '创建者：L.H.S<br><span style="font-size:11px;color:#888;">最后访问：' + new Date().toLocaleDateString() + '</span>'; else cn.innerHTML = '创建者：Unknown'; document.getElementById('propertiesDialog').classList.remove('hidden'); });
+        
+        archiveIcon.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+            contextMenu.classList.remove('hidden');
+        });
+        
+        archiveIcon.addEventListener('click', (e) => { checkFolderClick(e); });
+        
+        // 删除菜单
+        document.getElementById('menuDelete').addEventListener('click', () => {
+            hideContextMenu();
+            deleteAttempts++;
+            if (deleteAttempts === 1) showNotification('⚠️ 无法删除此文件夹：访问被拒绝');
+            else if (deleteAttempts === 2) showNotification('❓ 你确定要删吗...算了问了也没用');
+            else if (deleteAttempts === 3) {
+                showNotification('⚠️ 此文件夹包含系统关键文件，删除可能导致系统不稳定。请勿尝试。——最后一位使用者');
+                document.getElementById('archiveFolderIcon').textContent = '🔒';
+            } else showNotification('⛔ 系统保护：此操作已被禁止');
+        });
+        
+        // 属性菜单
+        document.getElementById('menuProperties').addEventListener('click', () => {
+            hideContextMenu();
+            document.getElementById('propSize').textContent = deleteAttempts >= 2 ? '未知 (受保护)' : '计算中...';
+            const cn = document.getElementById('creatorNote');
+            if (deleteAttempts >= 1) cn.innerHTML = '创建者：L.H.S<br><span style="font-size:11px;color:#888;">最后访问：' + new Date().toLocaleDateString() + '</span>';
+            else cn.innerHTML = '创建者：Unknown';
+            document.getElementById('propertiesDialog').classList.remove('hidden');
+        });
+        
+        // 重新开始菜单
         document.getElementById('menuRestart').addEventListener('click', () => { hideContextMenu(); resetAllProgress(); });
-        document.getElementById('revealSecret').addEventListener('click', () => { hideContextMenu(); showNotification('🔓 隐藏文件夹功能已启用', 2000); });
+        
+        // 显示隐藏文件夹
+        document.getElementById('revealSecret').addEventListener('click', () => {
+            hideContextMenu();
+            showNotification('🔓 隐藏结局密码: 1015hs', 3000);
+        });
+        
+        // 桌面重新开始按钮
         document.getElementById('desktopRestartBtn').addEventListener('click', resetAllProgress);
-        document.getElementById('deerIcon').addEventListener('click', () => { showNotification('🦌 你看见我了', 1500); showFloatingEmoji('🦌'); checkDeerClick(); });
-        document.getElementById('closeProperties').addEventListener('click', () => { document.getElementById('propertiesDialog').classList.add('hidden'); });
         
-        const passwordDialog = document.getElementById('passwordDialog'), passwordInput = document.getElementById('passwordInput');
-        function showPasswordDialog() { passwordDialog.classList.remove('hidden'); passwordInput.value = ''; passwordInput.focus(); }
-        document.getElementById('submitPassword').addEventListener('click', () => { if(passwordInput.value === '1015hs') { passwordDialog.classList.add('hidden'); const h = localStorage.getItem('secret_ending_triggered'); if(h === 'true') window.location.href = 'archive/secret-ending.html?mode=reply'; else window.location.href = 'archive/secret-ending.html'; } else { showNotification('❌ 密码错误', 1500); passwordInput.value = ''; } });
-        document.getElementById('cancelPassword').addEventListener('click', () => { passwordDialog.classList.add('hidden'); });
+        // 鹿角点击彩蛋
+        document.getElementById('deerIcon').addEventListener('click', (e) => {
+            showNotification('🦌 你看见我了', 1500);
+            showFloatingEmoji('🦌');
+            checkDeerClick(e);
+        });
         
-        archiveIcon.addEventListener('dblclick', () => { if(!bootCompleted) { showNotification('系统正在启动中...', 1500); return; } const t = localStorage.getItem('trace_ending_triggered'); const h = localStorage.getItem('secret_ending_triggered'); if(h === 'true') { window.location.href = 'archive/index.html'; return; } if(t === 'true') showPasswordDialog(); else { showNotification('🔓 正在打开 HEE...', 1000); setTimeout(() => { window.location.href = 'archive/index.html'; }, 500); } });
+        // 关闭属性对话框
+        document.getElementById('closeProperties').addEventListener('click', () => {
+            document.getElementById('propertiesDialog').classList.add('hidden');
+        });
         
-        document.querySelectorAll('.desktop-icon:not(.archive-icon)').forEach(icon => { icon.addEventListener('dblclick', () => showNotification('📂 此文件夹为空。或者...你没有权限查看。')); icon.addEventListener('contextmenu', (e) => { e.preventDefault(); showNotification('⚠️ 无法访问：权限不足'); }); });
-        document.querySelectorAll('.dialog').forEach(dialog => { dialog.addEventListener('click', (e) => { if(e.target === dialog) dialog.classList.add('hidden'); }); });
+        // 密码验证
+        const passwordDialog = document.getElementById('passwordDialog');
+        const passwordInput = document.getElementById('passwordInput');
         
-        // ========== 手机虚拟键盘 ==========
-        if (isMobile) {
-            const mobileBtn = document.getElementById('mobileEasterBtn');
-            const virtualKeyboard = document.getElementById('virtualKeyboard');
-            mobileBtn.style.display = 'flex';
-            mobileBtn.onclick = () => {
-                if (virtualKeyboard.style.display === 'none') {
-                    virtualKeyboard.style.display = 'flex';
-                    showNotification('✨ 按顺序点击 H E E S E U N G ✨', 2000);
-                } else {
-                    virtualKeyboard.style.display = 'none';
-                }
-            };
-            document.getElementById('closeKeyboard').onclick = () => { virtualKeyboard.style.display = 'none'; };
-            
-            // 正确顺序：H → E → E → S → E → U → N → G
-            const expected = ['h', 'e', 'e', 's', 'e', 'u', 'n', 'g'];
-            let currentStep = 0;
-            
-            document.querySelectorAll('.virtual-key-btn[data-key]').forEach(btn => {
-                btn.onclick = () => {
-                    const key = btn.getAttribute('data-key');
-                    const expectedKey = expected[currentStep];
-                    
-                    if (key === expectedKey) {
-                        currentStep++;
-                        btn.style.transform = 'scale(0.9)';
-                        setTimeout(() => { btn.style.transform = ''; }, 100);
-                        
-                        if (currentStep === expected.length) {
-                            currentStep = 0;
-                            showHeeseungEasterEgg();
-                        }
-                    } else {
-                        currentStep = 0;
-                        showNotification('❌ 顺序错了！重新从 H 开始', 1000);
-                        btn.style.transform = 'scale(0.9)';
-                        setTimeout(() => { btn.style.transform = ''; }, 100);
-                    }
-                };
-            });
-            
-            setTimeout(() => { showNotification('✨ 点击左下角✨按钮，按顺序点击 H E E S E U N G ✨', 4000); }, 2000);
+        function showPasswordDialog() {
+            passwordDialog.classList.remove('hidden');
+            passwordInput.value = '';
+            passwordInput.focus();
         }
         
-        document.addEventListener('keydown', (e) => { checkKeyboardInput(e); checkShortcuts(e); });
-        updateTime(); setInterval(updateTime, 1000); setInterval(updateDependency, 5000); updateDependency();
+        document.getElementById('submitPassword').addEventListener('click', () => {
+            if (passwordInput.value === '1015hs') {
+                passwordDialog.classList.add('hidden');
+                const h = localStorage.getItem('secret_ending_triggered');
+                if (h === 'true') window.location.href = 'archive/secret-ending.html?mode=reply';
+                else window.location.href = 'archive/secret-ending.html';
+            } else {
+                showNotification('❌ 密码错误', 1500);
+                passwordInput.value = '';
+            }
+        });
         
+        document.getElementById('cancelPassword').addEventListener('click', () => {
+            passwordDialog.classList.add('hidden');
+        });
+        
+        // 双击打开文件夹
+        archiveIcon.addEventListener('dblclick', () => {
+            if (!bootCompleted) {
+                showNotification('系统正在启动中...', 1500);
+                return;
+            }
+            const t = localStorage.getItem('trace_ending_triggered');
+            const h = localStorage.getItem('secret_ending_triggered');
+            if (h === 'true') {
+                window.location.href = 'archive/index.html';
+                return;
+            }
+            if (t === 'true') showPasswordDialog();
+            else {
+                showNotification('🔓 正在打开 HEE...', 1000);
+                setTimeout(() => { window.location.href = 'archive/index.html'; }, 500);
+            }
+        });
+        
+        // 其他文件夹
+        document.querySelectorAll('.desktop-icon:not(.archive-icon)').forEach(icon => {
+            icon.addEventListener('dblclick', () => showNotification('📂 此文件夹为空。或者...你没有权限查看。'));
+            icon.addEventListener('contextmenu', (e) => { e.preventDefault(); showNotification('⚠️ 无法访问：权限不足'); });
+        });
+        
+        // 关闭对话框
+        document.querySelectorAll('.dialog').forEach(dialog => {
+            dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.classList.add('hidden'); });
+        });
+        
+        // 注册键盘事件
+        document.addEventListener('keydown', (e) => { checkShortcuts(e); });
+        
+        // 初始化
+        updateTime();
+        setInterval(updateTime, 1000);
+        setInterval(updateDependency, 5000);
+        updateDependency();
+        
+        // 控制台彩蛋
         console.log('%c🦌 HEE · 痕迹', 'color: #ffd966; font-size: 14px');
         console.log('%c彩蛋列表:', 'color: #ffd966; font-size: 12px');
-        console.log('  💖 输入 "heeseung" - 触发隐藏对话');
-        console.log('  🦌 连续点击鹿角5次');
+        console.log('  🦌 连续点击鹿角5次 - 触发弹窗');
         console.log('  📁 连续点击HEE文件夹10次');
         console.log('  📱 手机摇一摇');
         console.log('  💾 Ctrl+S');
