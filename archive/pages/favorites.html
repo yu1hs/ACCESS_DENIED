@@ -3,22 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FAVORITES - HEE_ARCHIVE</title>
+    <title>FAVORITES - HEE</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0a0a;
             font-family: 'Segoe UI', 'Courier New', monospace;
             color: #ccc;
-            padding: 30px;
+            padding: 20px;
             min-height: 100vh;
         }
-
         .fav-header {
             border-bottom: 1px solid #333;
             padding-bottom: 15px;
@@ -26,23 +20,12 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-
-        .fav-header h2 {
-            color: #ffd966;
-            font-size: 20px;
-            letter-spacing: 2px;
-        }
-
-        .fav-stats {
-            font-size: 11px;
-            color: #ffd966;
-        }
-
-        .fav-section {
-            margin-bottom: 35px;
-        }
-
+        .fav-header h2 { color: #ffd966; font-size: 20px; }
+        .fav-stats { font-size: 11px; color: #ffd966; }
+        .fav-section { margin-bottom: 35px; }
         .fav-section h3 {
             color: #ffd966;
             font-size: 16px;
@@ -50,52 +33,53 @@
             padding-bottom: 8px;
             border-bottom: 1px solid #2a2a2a;
         }
-
         .fav-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 15px;
         }
-
         .fav-card {
             background: #0f0f0f;
             border: 1px solid #2a2a2a;
-            border-radius: 10px;
-            padding: 16px;
+            border-radius: 12px;
+            overflow: hidden;
             transition: all 0.2s;
             cursor: pointer;
         }
-
         .fav-card:hover {
             border-color: #3a6ea5;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
         }
-
-        .fav-emoji {
-            font-size: 28px;
-            margin-bottom: 10px;
+        .fav-image {
+            aspect-ratio: 1;
+            background: #060606;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
-
-        .fav-title {
-            font-size: 14px;
-            color: #ddd;
-            margin-bottom: 8px;
+        .fav-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
         }
-
-        .fav-note {
-            font-size: 11px;
-            color: #888;
-            line-height: 1.5;
-            font-style: italic;
+        .fav-card:hover .fav-image img {
+            transform: scale(1.05);
         }
-
+        .fav-image .no-img {
+            font-size: 48px;
+            color: #555;
+        }
+        .fav-info { padding: 12px; }
+        .fav-title { font-size: 13px; color: #ffd966; margin-bottom: 4px; font-weight: 500; }
+        .fav-note { font-size: 10px; color: #888; line-height: 1.4; font-style: italic; }
         .click-count {
-            margin-top: 10px;
+            margin-top: 8px;
             font-size: 10px;
             color: #ffd966;
             text-align: right;
         }
-
         .progress-section {
             margin-top: 30px;
             padding: 16px;
@@ -103,36 +87,16 @@
             border: 1px solid #2a2a2a;
             border-radius: 10px;
         }
-
-        .progress-bar {
-            background: #1a1a1a;
-            border-radius: 10px;
-            height: 6px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .progress-fill {
-            background: #ffd966;
-            height: 100%;
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        .progress-text {
-            font-size: 11px;
-            color: #888;
-            margin-top: 8px;
-            text-align: center;
-        }
-
-        .footer-note {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 11px;
-            color: #555;
-            padding-top: 20px;
-            border-top: 1px solid #222;
+        .progress-bar { background: #1a1a1a; border-radius: 10px; height: 6px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { background: #ffd966; height: 100%; width: 0%; transition: width 0.3s; }
+        .progress-text { font-size: 11px; color: #888; margin-top: 8px; text-align: center; }
+        .footer-note { margin-top: 30px; text-align: center; font-size: 11px; color: #555; padding-top: 20px; border-top: 1px solid #222; }
+        
+        @media (max-width: 600px) {
+            body { padding: 15px; }
+            .fav-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+            .fav-title { font-size: 11px; }
+            .fav-note { font-size: 9px; }
         }
     </style>
 </head>
@@ -158,9 +122,7 @@
     </div>
 
     <div class="progress-section">
-        <div class="progress-bar">
-            <div id="progressFill" class="progress-fill"></div>
-        </div>
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
         <div id="progressText" class="progress-text"></div>
     </div>
 
@@ -169,31 +131,30 @@
     </div>
 
     <script>
-        // 收藏数据
+        // 收藏数据 - 把图片路径改成你的实际文件名
         const favoritesData = {
             songs: [
-                { emoji: "🎵", title: "未命名", note: "凌晨三点听比较好。\n白天听的话就没感觉了。" },
-                { emoji: "🎶", title: "未命名", note: "第一次听的时候觉得这是写给别人的。\n后来发现写给谁都行。" },
-                { emoji: "🎧", title: "未命名", note: "这首不常听。\n但每次听都会想起某天。" }
+                { emoji: "🎵", title: "凌晨三点的歌", image: "assets/images/favorites/song1.jpg", note: "凌晨三点听比较好。\n白天听的话就没感觉了。" },
+                { emoji: "🎶", title: "写给谁都可以", image: "assets/images/favorites/song2.jpg", note: "第一次听的时候觉得这是写给别人的。\n后来发现写给谁都行。" },
+                { emoji: "🎧", title: "想起某天", image: "assets/images/favorites/song3.jpg", note: "这首不常听。\n但每次听都会想起某天。" }
             ],
             movies: [
-                { emoji: "🎬", title: "未命名", note: "第二次看比第一次好。\n第三次比第二次差一点。\n第四次...还没看第四次。" },
-                { emoji: "📽️", title: "未命名", note: "结局不喜欢。\n但前面的部分看了很多遍。" },
-                { emoji: "🎞️", title: "未命名", note: "不知道在讲什么。\n画面很好看。\n够了。" }
+                { emoji: "🎬", title: "看了很多遍", image: "assets/images/favorites/movie1.jpg", note: "第二次看比第一次好。\n第三次比第二次差一点。" },
+                { emoji: "📽️", title: "不喜欢的结局", image: "assets/images/favorites/movie2.jpg", note: "结局不喜欢。\n但前面的部分看了很多遍。" },
+                { emoji: "🎞️", title: "画面很美", image: "assets/images/favorites/movie3.jpg", note: "不知道在讲什么。\n画面很好看。够了。" }
             ],
             photos: [
-                { emoji: "📷", title: "未命名", note: "天气很好那天。" },
-                { emoji: "🌅", title: "未命名", note: "没人。" },
-                { emoji: "🌃", title: "未命名", note: "那天本来想发出去的。" }
+                { emoji: "📷", title: "天气很好", image: "assets/images/favorites/fav_photo1.jpg", note: "天气很好那天。" },
+                { emoji: "🌅", title: "没人", image: "assets/images/favorites/fav_photo2.jpg", note: "没人。" },
+                { emoji: "🌃", title: "想发出去", image: "assets/images/favorites/fav_photo3.jpg", note: "那天本来想发出去的。" }
             ]
         };
 
         let totalClicks = 0;
-        const targetClicks = 8;  // 结局需要的点击次数
+        const targetClicks = 8;
 
-        // 加载点击统计
         function loadClickCounts() {
-            const saved = localStorage.getItem('hee_archive_v3');
+            const saved = localStorage.getItem('hee_archive_dialogue');
             if (saved) {
                 const userData = JSON.parse(saved);
                 totalClicks = userData.favClickCount || 0;
@@ -204,20 +165,18 @@
 
         function saveClickCount() {
             totalClicks++;
-            const saved = localStorage.getItem('hee_archive_v3');
+            const saved = localStorage.getItem('hee_archive_dialogue');
             let userData = saved ? JSON.parse(saved) : {};
             userData.favClickCount = totalClicks;
-            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            localStorage.setItem('hee_archive_dialogue', JSON.stringify(userData));
             
             updateStatsDisplay();
             updateProgress();
             
-            // 通知父窗口（触发结局检查）
             if (window.parent && window.parent.increaseFavClick) {
                 window.parent.increaseFavClick();
             }
             
-            // 触发聊天
             setTimeout(() => {
                 const chatWindow = window.parent.document.getElementById('chatWindow');
                 if (chatWindow && chatWindow.classList.contains('hidden')) {
@@ -244,7 +203,7 @@
             if (fill) fill.style.width = percent + '%';
             if (text) {
                 if (totalClicks >= targetClicks) {
-                    text.innerHTML = '✨ 已达到「共鸣」结局条件 ✨';
+                    text.innerHTML = '✨ 已达到「共鸣」条件 ✨';
                     text.style.color = '#ffd966';
                 } else {
                     text.innerHTML = `共鸣进度: ${totalClicks}/${targetClicks} 次点击 · 继续探索羲承的喜好`;
@@ -253,34 +212,43 @@
             }
         }
 
-        function renderGrid(category, items, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
+        function renderCard(item, category, index) {
+            const card = document.createElement('div');
+            card.className = 'fav-card';
+            card.onclick = () => {
+                saveClickCount();
+                const note = document.createElement('div');
+                note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+                note.textContent = '⭐ 已收藏到记忆 · 羲承会记住';
+                document.body.appendChild(note);
+                setTimeout(() => note.remove(), 1500);
+            };
             
-            container.innerHTML = '';
+            // 图片处理
+            let imageHtml = '';
+            if (item.image) {
+                imageHtml = `<img src="${item.image}" alt="${item.title}" onerror="this.parentElement.innerHTML='<div class=\'no-img\'>${item.emoji}</div>'">`;
+            } else {
+                imageHtml = `<div class="no-img">${item.emoji}</div>`;
+            }
             
-            items.forEach((item, index) => {
-                const card = document.createElement('div');
-                card.className = 'fav-card';
-                card.onclick = () => {
-                    saveClickCount();
-                    
-                    // 显示提示
-                    const note = document.createElement('div');
-                    note.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
-                    note.textContent = '⭐ 已收藏到记忆 · 羲承会记住';
-                    document.body.appendChild(note);
-                    setTimeout(() => note.remove(), 1500);
-                };
-                
-                card.innerHTML = `
-                    <div class="fav-emoji">${item.emoji}</div>
+            card.innerHTML = `
+                <div class="fav-image">${imageHtml}</div>
+                <div class="fav-info">
                     <div class="fav-title">${item.title}</div>
                     <div class="fav-note">${item.note.replace(/\n/g, '<br>')}</div>
                     <div class="click-count">🎵</div>
-                `;
-                
-                container.appendChild(card);
+                </div>
+            `;
+            return card;
+        }
+
+        function renderGrid(category, items, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                container.appendChild(renderCard(item, category, index));
             });
         }
 
