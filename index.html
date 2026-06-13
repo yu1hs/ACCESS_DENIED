@@ -2,73 +2,64 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>HEE · 痕迹</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='70' font-size='70' text-anchor='middle' fill='%23ffd966'%3E🦌%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="desktop.css">
     <style>
-        /* 桌面重新开始按钮 */
-        .desktop-restart-btn {
+        /* 彩蛋动画 */
+        @keyframes glitch {
+            0% { transform: translate(0); opacity: 1; }
+            10% { transform: translate(-2px, 1px); opacity: 0.9; }
+            20% { transform: translate(2px, -1px); }
+            30% { transform: translate(-1px, 2px); }
+            40% { transform: translate(1px, -2px); }
+            50% { transform: translate(-2px, -1px); }
+            60% { transform: translate(2px, 1px); }
+            70% { transform: translate(0); }
+            100% { transform: translate(0); }
+        }
+        .glitch-effect {
+            animation: glitch 0.3s ease-in-out;
+        }
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .heart-beat {
+            animation: heartBeat 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        /* 手机摇一摇提示 */
+        .shake-toast {
             position: fixed;
-            bottom: 60px;
-            left: 20px;
-            background: rgba(255, 102, 170, 0.9);
-            color: white;
-            border: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: #ffd966;
+            padding: 12px 24px;
             border-radius: 30px;
-            padding: 8px 18px;
-            cursor: pointer;
-            z-index: 1000;
-            font-size: 12px;
+            font-size: 14px;
+            z-index: 10000;
+            animation: fadeOut 2s forwards;
             font-family: monospace;
-            backdrop-filter: blur(4px);
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            white-space: nowrap;
         }
-        .desktop-restart-btn:hover {
-            background: #ff66aa;
-            transform: scale(1.02);
-        }
-        
-        /* 依赖度条 */
-        .dependency-bar-container {
-            position: fixed;
-            bottom: 60px;
-            right: 20px;
-            width: 180px;
-            background: rgba(20,20,30,0.95);
-            border-radius: 12px;
-            padding: 8px 12px;
-            z-index: 100;
-            font-family: monospace;
-            font-size: 10px;
-            border: 1px solid #333;
-            backdrop-filter: blur(4px);
-        }
-        .dependency-bar {
-            height: 4px;
-            background: #ff66aa;
-            border-radius: 2px;
-            transition: width 0.3s;
-        }
-        .dependency-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 4px;
-            color: #aaa;
-        }
-        
-        /* 浮动表情动画 */
-        @keyframes floatEmoji {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-100px); }
-        }
-        .floating-emoji {
-            position: fixed;
-            pointer-events: none;
-            font-size: 28px;
-            animation: floatEmoji 2s ease-out forwards;
-            z-index: 1000;
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; visibility: hidden; }
         }
     </style>
 </head>
@@ -101,23 +92,12 @@
         <div class="deer-icon" id="deerIcon">🦌</div>
     </div>
 
-    <!-- 依赖度条 -->
-    <div id="dependencyBar" class="dependency-bar-container" style="display:none;">
-        <div class="dependency-label">
-            <span>💜 依赖度</span>
-            <span id="dependencyValue">0%</span>
-        </div>
-        <div class="dependency-bar" id="dependencyFill"></div>
-    </div>
-
-    <!-- 桌面重新开始按钮 -->
-    <button id="desktopRestartBtn" class="desktop-restart-btn">💜 重新认识一次吧？</button>
-
     <!-- 右键菜单 -->
     <div id="contextMenu" class="context-menu hidden">
         <div class="context-item" id="menuDelete">删除</div>
         <div class="context-item" id="menuProperties">属性</div>
         <div class="context-item" id="menuRestart">💜 重新认识一次吧？</div>
+        <div class="context-item" id="revealSecret">🔓 显示隐藏文件夹</div>
     </div>
 
     <!-- 密码对话框 -->
@@ -133,6 +113,7 @@
         </div>
     </div>
 
+    <!-- 删除对话框 -->
     <div id="deleteDialog" class="dialog hidden">
         <div class="dialog-content">
             <p id="deleteMessage">确定要删除此文件夹吗？</p>
@@ -143,6 +124,7 @@
         </div>
     </div>
 
+    <!-- 属性对话框 -->
     <div id="propertiesDialog" class="dialog hidden">
         <div class="dialog-content">
             <h3>📁 HEE 属性</h3>
@@ -157,7 +139,10 @@
         </div>
     </div>
 
+    <!-- 通知 -->
     <div id="notification" class="notification hidden"></div>
+
+    <!-- 启动画面 -->
     <div id="bootScreen" class="boot-screen">
         <div class="boot-text">
             <div>Booting...</div>
@@ -167,12 +152,194 @@
         </div>
     </div>
 
+    <!-- 桌面重新开始按钮 -->
+    <button id="desktopRestartBtn" class="desktop-restart-btn">💜 重新认识一次吧？</button>
+
+    <!-- 依赖度条 -->
+    <div id="dependencyBar" class="dependency-bar-container" style="display:none;">
+        <div class="dependency-label">
+            <span>💜 依赖度</span>
+            <span id="dependencyValue">0%</span>
+        </div>
+        <div class="dependency-bar" id="dependencyFill"></div>
+    </div>
+
     <script>
+        // ========== 变量定义 ==========
         let deleteAttempts = 0;
         let notificationTimeout;
         let bootCompleted = false;
-
-        // 启动画面
+        let konamiIndex = 0;
+        let deerClickCount = 0;
+        let deerClickTimer = null;
+        let typeString = '';
+        let typeTimer = null;
+        
+        // 科乐美码
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        
+        // ========== 辅助函数 ==========
+        function showNotification(msg, duration = 3000) {
+            const notif = document.getElementById('notification');
+            notif.textContent = msg;
+            notif.classList.remove('hidden');
+            if (notificationTimeout) clearTimeout(notificationTimeout);
+            notificationTimeout = setTimeout(() => notif.classList.add('hidden'), duration);
+        }
+        
+        function showFloatingEmoji(emoji) {
+            const div = document.createElement('div');
+            div.className = 'floating-emoji';
+            div.textContent = emoji;
+            div.style.left = Math.random() * 80 + 10 + '%';
+            div.style.top = '70%';
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2000);
+        }
+        
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('taskbarTime').textContent = now.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
+        }
+        
+        // ========== 彩蛋系统 ==========
+        
+        // 1. 科乐美彩蛋
+        function checkKonami(e) {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    konamiIndex = 0;
+                    showNotification('🎮 恭喜！彩蛋触发！', 3000);
+                    showFloatingEmoji('🎮');
+                    const msg = document.createElement('div');
+                    msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#ff66aa,#ffd966);color:#0a0a0a;padding:20px 40px;border-radius:20px;font-family:monospace;z-index:10000;font-size:16px;text-align:center;';
+                    msg.innerHTML = '✨ 科乐美彩蛋！<br>你发现了隐藏指令 ✨';
+                    document.body.appendChild(msg);
+                    setTimeout(() => msg.remove(), 2500);
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        }
+        
+        // 2. 鹿角连点彩蛋
+        function checkDeerClick() {
+            deerClickCount++;
+            if (deerClickTimer) clearTimeout(deerClickTimer);
+            deerClickTimer = setTimeout(() => { deerClickCount = 0; }, 2000);
+            
+            if (deerClickCount >= 5) {
+                deerClickCount = 0;
+                showNotification('🦌✨ 隐藏彩蛋！', 2000);
+                document.body.classList.add('glitch-effect');
+                setTimeout(() => document.body.classList.remove('glitch-effect'), 500);
+                showFloatingEmoji('✨');
+                const msg = document.createElement('div');
+                msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0a0a;border:2px solid #ff66aa;padding:20px;border-radius:16px;z-index:10000;text-align:center;font-family:monospace;';
+                msg.innerHTML = `
+                    <div style="font-size:48px;">🦌</div>
+                    <div style="color:#ff66aa;margin-top:10px;">「你发现了我」</div>
+                    <div style="font-size:11px;color:#888;margin-top:8px;">—— 李羲承</div>
+                `;
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 3000);
+            }
+        }
+        
+        // 3. 键盘打字彩蛋
+        function checkTypeString(e) {
+            typeString += e.key.toLowerCase();
+            if (typeString.length > 8) typeString = typeString.slice(-8);
+            if (typeString.includes('heeseung')) {
+                typeString = '';
+                showNotification('💖 李羲承 💖', 2000);
+                showFloatingEmoji('💖');
+                document.body.classList.add('heart-beat');
+                setTimeout(() => document.body.classList.remove('heart-beat'), 500);
+            }
+        }
+        
+        // 4. 手机摇一摇彩蛋
+        if (window.DeviceMotionEvent) {
+            let lastShake = 0;
+            window.addEventListener('devicemotion', function(e) {
+                const acceleration = e.accelerationIncludingGravity;
+                if (acceleration) {
+                    const x = acceleration.x;
+                    const y = acceleration.y;
+                    const z = acceleration.z;
+                    const shake = Math.abs(x) + Math.abs(y) + Math.abs(z);
+                    const now = Date.now();
+                    if (shake > 25 && now - lastShake > 3000) {
+                        lastShake = now;
+                        showNotification('📱 别摇了...', 1500);
+                        showFloatingEmoji('📱');
+                    }
+                }
+            });
+        }
+        
+        // 5. 键盘快捷键彩蛋
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                showNotification('💾 保存到哪里？你心里吗。', 2000);
+            }
+            if (e.key === 'F5') {
+                e.preventDefault();
+                showNotification('🔄 刷新也不会变快', 2000);
+            }
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                console.log('%c┌─────────────────────────────────┐', '#555');
+                console.log('%c│          🦌                       │', '#555');
+                console.log('%c│   别拆了。没什么好拆的。           │', '#ffd966');
+                console.log('%c└─────────────────────────────────┘', '#555');
+            }
+            checkKonami(e);
+            checkTypeString(e);
+        });
+        
+        // ========== 依赖度更新 ==========
+        function updateDependency() {
+            const traceTriggered = localStorage.getItem('trace_ending_triggered');
+            if (traceTriggered === 'true') {
+                const bar = document.getElementById('dependencyBar');
+                if (bar) bar.style.display = 'none';
+                return;
+            }
+            
+            const saved = localStorage.getItem('hee_archive_dialogue');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const day = data.day || 1;
+                const dep = Math.min(100, day * 14);
+                
+                const bar = document.getElementById('dependencyBar');
+                const fill = document.getElementById('dependencyFill');
+                const val = document.getElementById('dependencyValue');
+                
+                if (bar && dep > 10) bar.style.display = 'block';
+                if (fill) fill.style.width = dep + '%';
+                if (val) val.textContent = dep + '%';
+            }
+        }
+        
+        // ========== 重置游戏 ==========
+        function resetAllProgress() {
+            if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
+                localStorage.removeItem('hee_archive_dialogue');
+                localStorage.removeItem('trace_ending_triggered');
+                localStorage.removeItem('secret_ending_triggered');
+                localStorage.removeItem('boot_completed');
+                showNotification('✨ 已重置，重新认识羲承吧 ✨', 2000);
+                showFloatingEmoji('🦌');
+                setTimeout(() => { location.reload(); }, 1500);
+            }
+        }
+        
+        // ========== 启动画面 ==========
         if (!localStorage.getItem('boot_completed')) {
             setTimeout(() => {
                 const bootScreen = document.getElementById('bootScreen');
@@ -187,89 +354,12 @@
             document.getElementById('bootScreen').style.display = 'none';
             bootCompleted = true;
         }
-
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('taskbarTime').textContent = now.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit' });
-        }
-        updateTime();
-        setInterval(updateTime, 1000);
-
-        function showNotification(msg, duration = 3000) {
-            const notif = document.getElementById('notification');
-            notif.textContent = msg;
-            notif.classList.remove('hidden');
-            if (notificationTimeout) clearTimeout(notificationTimeout);
-            notificationTimeout = setTimeout(() => notif.classList.add('hidden'), duration);
-        }
-
-        // 浮动表情
-        function showFloatingEmoji(emoji) {
-            const div = document.createElement('div');
-            div.className = 'floating-emoji';
-            div.textContent = emoji;
-            div.style.left = Math.random() * 80 + 10 + '%';
-            div.style.top = '70%';
-            document.body.appendChild(div);
-            setTimeout(() => div.remove(), 2000);
-        }
-
-        // ========== 重新开始功能 ==========
-        function resetAllProgress() {
-            if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置，包括：\n• 第1天重新开始\n• 亲密度归零\n• 所有解锁的页面重新锁定\n• 结局记录清空\n\n确定要重置吗？')) {
-                // 清除所有游戏数据
-                localStorage.removeItem('hee_archive_v6');
-                localStorage.removeItem('hee_archive_v5');
-                localStorage.removeItem('hee_archive_v4');
-                localStorage.removeItem('hee_archive_v3');
-                localStorage.removeItem('trace_ending_triggered');
-                localStorage.removeItem('secret_ending_triggered');
-                localStorage.removeItem('boot_completed');
-                localStorage.removeItem('secret_revealed');
-                
-                showNotification('✨ 已重置，重新认识羲承吧 ✨', 2000);
-                showFloatingEmoji('🦌');
-                
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
-            }
-        }
-
-        // ========== 依赖度更新 ==========
-        function updateDependency() {
-            const traceTriggered = localStorage.getItem('trace_ending_triggered');
-            if (traceTriggered === 'true') {
-                const bar = document.getElementById('dependencyBar');
-                if (bar) bar.style.display = 'none';
-                return;
-            }
-            
-            const saved = localStorage.getItem('hee_archive_v6');
-            if (saved) {
-                const data = JSON.parse(saved);
-                const day = data.day || 1;
-                const fam = data.familiarity || 0;
-                let dep = Math.min(100, Math.floor((fam + day * 5) / 1.5));
-                
-                const bar = document.getElementById('dependencyBar');
-                const fill = document.getElementById('dependencyFill');
-                const val = document.getElementById('dependencyValue');
-                
-                if (bar && dep > 15) bar.style.display = 'block';
-                if (fill) fill.style.width = dep + '%';
-                if (val) val.textContent = dep + '%';
-            }
-        }
         
-        setInterval(updateDependency, 5000);
-        updateDependency();
-
         // ========== 右键菜单 ==========
         const contextMenu = document.getElementById('contextMenu');
         function hideContextMenu() { contextMenu.classList.add('hidden'); }
         document.addEventListener('click', hideContextMenu);
-
+        
         const archiveIcon = document.querySelector('.archive-icon');
         
         function checkTraceEndingTriggered() {
@@ -290,14 +380,14 @@
         }
         
         checkTraceEndingTriggered();
-
+        
         archiveIcon.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             contextMenu.style.left = e.pageX + 'px';
             contextMenu.style.top = e.pageY + 'px';
             contextMenu.classList.remove('hidden');
         });
-
+        
         // 删除菜单
         document.getElementById('menuDelete').addEventListener('click', () => {
             hideContextMenu();
@@ -309,7 +399,7 @@
                 document.getElementById('archiveFolderIcon').textContent = '🔒';
             } else showNotification('⛔ 系统保护：此操作已被禁止');
         });
-
+        
         // 属性菜单
         document.getElementById('menuProperties').addEventListener('click', () => {
             hideContextMenu();
@@ -320,22 +410,34 @@
             else creatorNote.innerHTML = '创建者：Unknown';
             document.getElementById('propertiesDialog').classList.remove('hidden');
         });
-
+        
         // 重新开始菜单
         document.getElementById('menuRestart').addEventListener('click', () => {
             hideContextMenu();
             resetAllProgress();
         });
-
-        // 桌面重新开始按钮
-        document.getElementById('desktopRestartBtn').addEventListener('click', () => {
-            resetAllProgress();
+        
+        // 显示隐藏文件夹
+        document.getElementById('revealSecret').addEventListener('click', () => {
+            hideContextMenu();
+            showNotification('🔓 隐藏文件夹功能已启用<br>输入密码: 1015hs', 3000);
         });
-
+        
+        // 桌面重新开始按钮
+        document.getElementById('desktopRestartBtn').addEventListener('click', resetAllProgress);
+        
+        // 鹿角点击彩蛋
+        document.getElementById('deerIcon').addEventListener('click', () => {
+            showNotification('🦌 你看见我了', 1500);
+            showFloatingEmoji('🦌');
+            checkDeerClick();
+        });
+        
+        // 关闭属性对话框
         document.getElementById('closeProperties').addEventListener('click', () => {
             document.getElementById('propertiesDialog').classList.add('hidden');
         });
-
+        
         // 密码验证
         const passwordDialog = document.getElementById('passwordDialog');
         const passwordInput = document.getElementById('passwordInput');
@@ -366,7 +468,7 @@
             passwordDialog.classList.add('hidden');
         });
         
-        // 双击打开
+        // 双击打开文件夹
         archiveIcon.addEventListener('dblclick', () => {
             if (!bootCompleted) {
                 showNotification('系统正在启动中...', 1500);
@@ -388,46 +490,38 @@
                 setTimeout(() => { window.location.href = 'archive/index.html'; }, 500);
             }
         });
-
+        
         archiveIcon.addEventListener('click', (e) => {
             if (e.detail === 1 && bootCompleted && deleteAttempts === 0) showNotification('❓ 双击打开', 1500);
         });
-
+        
+        // 其他文件夹
         document.querySelectorAll('.desktop-icon:not(.archive-icon)').forEach(icon => {
             icon.addEventListener('dblclick', () => showNotification('📂 此文件夹为空。或者...你没有权限查看。'));
             icon.addEventListener('contextmenu', (e) => { e.preventDefault(); showNotification('⚠️ 无法访问：权限不足'); });
         });
-
-        document.getElementById('deerIcon').addEventListener('click', () => {
-            showNotification('🦌 你看见我了', 2000);
-            showFloatingEmoji('🦌');
-        });
-
+        
+        // 关闭对话框
         document.querySelectorAll('.dialog').forEach(dialog => {
             dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.classList.add('hidden'); });
         });
-
-        // 键盘彩蛋
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 's') { e.preventDefault(); showNotification('💾 保存到哪里？你心里吗。'); }
-            if (e.key === 'F5') { e.preventDefault(); showNotification('🔄 刷新也不会变快'); }
-            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
-                e.preventDefault();
-                console.log('%c┌─────────────────────────────────┐', '#555');
-                console.log('%c│          🦌                       │', '#555');
-                console.log('%c│   别拆了。没什么好拆的。           │', '#ffd966');
-                console.log('%c└─────────────────────────────────┘', '#555');
-            }
-            // 快捷键 R 重置
-            if (e.ctrlKey && e.key === 'r') {
-                e.preventDefault();
-                resetAllProgress();
-            }
-        });
-
-        console.log('%c🦌 HEE · 痕迹', 'color: #ffd966; font-size: 14px;');
-        console.log('%c双击 HEE 文件夹开始游戏', 'color: #888; font-size: 11px;');
-        console.log('%c按 Ctrl+R 可以重置所有进度', 'color: #666; font-size: 10px;');
+        
+        // 初始化
+        updateTime();
+        setInterval(updateTime, 1000);
+        setInterval(updateDependency, 5000);
+        updateDependency();
+        
+        // 控制台彩蛋
+        console.log('%c🦌 HEE · 痕迹', 'color: #ffd966; font-size: 14px');
+        console.log('%c彩蛋列表:', 'color: #ffd966; font-size: 12px');
+        console.log('  🎮 科乐美码: ↑↑↓↓←→←→BA');
+        console.log('  🦌 连续点击鹿角5次');
+        console.log('  ⌨️ 输入 "heeseung"');
+        console.log('  📱 手机摇一摇');
+        console.log('  💾 Ctrl+S');
+        console.log('  🔍 Ctrl+Shift+I');
+        console.log('%c隐藏结局密码: 1015hs', 'color: #ff66aa; font-size: 12px');
     </script>
 </body>
 </html>
