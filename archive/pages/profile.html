@@ -113,26 +113,61 @@
             background: #2a2a2a;
             border: 1px solid #4a4a4a;
             color: #ddd;
-            padding: 6px 16px;
+            padding: 8px 20px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
+            transition: all 0.2s;
         }
 
         .save-btn:hover {
             background: #3a6ea5;
             border-color: #5a8aba;
+            color: white;
         }
 
         .response-note {
             margin-top: 12px;
-            font-size: 11px;
+            font-size: 12px;
             color: #ffd966;
             display: none;
+            padding: 10px;
+            background: rgba(255, 217, 102, 0.1);
+            border-radius: 8px;
         }
 
         .response-note.show {
             display: block;
+        }
+
+        .progress-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            background: #1a1a1a;
+            border-radius: 10px;
+            height: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            background: #ffd966;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            text-align: center;
         }
     </style>
 </head>
@@ -175,66 +210,123 @@
         <div class="edit-section">
             <h4>📝 你觉得羲承是什么样的人？</h4>
             <textarea id="userImpression" class="edit-input" rows="3" placeholder="写在这里..."></textarea>
-            <button class="save-btn" id="saveImpression">保存</button>
+            <button class="save-btn" id="saveImpression">💾 保存你的印象</button>
             <div id="responseNote" class="response-note"></div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="progressText" class="progress-text"></div>
         </div>
     </div>
 
     <script>
         let savedImpression = '';
+        let hasSaved = false;
 
         function loadSavedData() {
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             if (saved) {
                 const userData = JSON.parse(saved);
                 if (userData.profileAnswer) {
                     savedImpression = userData.profileAnswer;
                     document.getElementById('userImpression').value = savedImpression;
+                    hasSaved = true;
                 }
-                // 检查是否有批注回复
                 if (userData.profileResponse) {
                     const note = document.getElementById('responseNote');
                     note.innerHTML = `✏️ 羲承的批注: "${userData.profileResponse}"`;
                     note.classList.add('show');
                 }
             }
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const fill = document.getElementById('progressFill');
+            const text = document.getElementById('progressText');
+            if (fill && text) {
+                if (hasSaved) {
+                    fill.style.width = '100%';
+                    text.innerHTML = '✨ 已完成 · 羲承看过了你的印象 ✨';
+                    text.style.color = '#ffd966';
+                } else {
+                    fill.style.width = '0%';
+                    text.innerHTML = '💭 写下你对羲承的印象 · 他会看到并回复';
+                    text.style.color = '#888';
+                }
+            }
         }
 
         function saveImpression() {
             const impression = document.getElementById('userImpression').value.trim();
-            if (!impression) return;
+            if (!impression) {
+                alert('请先写下你的印象');
+                return;
+            }
+            
+            if (impression.length < 2) {
+                alert('请多写一点（至少2个字）');
+                return;
+            }
 
-            const saved = localStorage.getItem('hee_archive_user');
+            const saved = localStorage.getItem('hee_archive_v3');
             let userData = saved ? JSON.parse(saved) : {};
             
             userData.profileAnswer = impression;
+            hasSaved = true;
             
-            // 生成羲承的批注
-            const responses = {
-                default: '其实还好',
-                tired: '今天还好',
-                quiet: '分人',
-                kind: '谢谢',
-                cold: '是吗'
-            };
-            
-            let response = responses.default;
-            if (impression.includes('累') || impression.includes('疲惫')) response = responses.tired;
-            else if (impression.includes('安静') || impression.includes('不爱说话')) response = responses.quiet;
-            else if (impression.includes('温柔') || impression.includes('善良')) response = responses.kind;
-            else if (impression.includes('冷') || impression.includes('难接近')) response = responses.cold;
+            // 生成羲承的批注（基于内容）
+            let response = '';
+            if (impression.includes('累') || impression.includes('疲惫')) {
+                response = '其实还好。只是不太笑而已。';
+            } else if (impression.includes('安静') || impression.includes('不爱说话')) {
+                response = '分人。对你...已经说了很多了。';
+            } else if (impression.includes('温柔') || impression.includes('善良')) {
+                response = '是吗。第一次有人这么评价我。谢谢。';
+            } else if (impression.includes('冷') || impression.includes('难接近')) {
+                response = '也许吧。但你还在。';
+            } else if (impression.includes('孤独') || impression.includes('一个人')) {
+                response = '习惯了。但现在...没那么孤独了。';
+            } else {
+                response = '谢谢。你写的时候，我在看。';
+            }
             
             userData.profileResponse = response;
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            
+            // 通知父窗口（触发结局检查）
+            if (window.parent && window.parent.saveProfileAnswer) {
+                window.parent.saveProfileAnswer(impression);
+            }
             
             const note = document.getElementById('responseNote');
             note.innerHTML = `✏️ 羲承的批注: "${response}"`;
             note.classList.add('show');
             
+            // 显示成功提示
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#3a6ea5;color:white;padding:8px 16px;border-radius:8px;font-size:12px;z-index:1000;';
+            successMsg.textContent = '💾 已保存 · 羲承会看到的';
+            document.body.appendChild(successMsg);
+            setTimeout(() => successMsg.remove(), 2000);
+            
+            updateProgress();
+            
             // 记录对话
             if (!userData.conversations) userData.conversations = [];
             userData.conversations.push({ type: 'profile_edit', content: impression, time: Date.now() });
-            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            localStorage.setItem('hee_archive_v3', JSON.stringify(userData));
+            
+            // 触发聊天窗口
+            setTimeout(() => {
+                const chatWindow = window.parent.document.getElementById('chatWindow');
+                if (chatWindow && chatWindow.classList.contains('hidden')) {
+                    chatWindow.classList.remove('hidden');
+                }
+            }, 500);
         }
 
         document.getElementById('saveImpression').addEventListener('click', saveImpression);
