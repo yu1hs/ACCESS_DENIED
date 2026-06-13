@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROFILE - HEE_ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #ccc;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .profile-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .profile-header h2 {
+            color: #ffd966;
+            font-size: 20px;
+            letter-spacing: 2px;
+        }
+
+        .profile-card {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 25px;
+        }
+
+        .profile-field {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .field-label {
+            width: 100px;
+            color: #ffd966;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .field-value {
+            flex: 1;
+            color: #ddd;
+            font-size: 13px;
+        }
+
+        .field-value.hidden-value {
+            color: #555;
+            font-style: italic;
+        }
+
+        .quote {
+            margin-top: 20px;
+            padding: 16px;
+            background: #0a0a0a;
+            border-left: 3px solid #ffd966;
+            font-size: 12px;
+            color: #888;
+            font-style: italic;
+        }
+
+        .edit-section {
+            background: #0f0f0f;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .edit-section h4 {
+            color: #ffd966;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .edit-input {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #ddd;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .edit-input:focus {
+            outline: none;
+            border-color: #ffd966;
+        }
+
+        .save-btn {
+            margin-top: 12px;
+            background: #2a2a2a;
+            border: 1px solid #4a4a4a;
+            color: #ddd;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .save-btn:hover {
+            background: #3a6ea5;
+            border-color: #5a8aba;
+        }
+
+        .response-note {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #ffd966;
+            display: none;
+        }
+
+        .response-note.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-header">
+            <h2>📄 PROFILE</h2>
+        </div>
+
+        <div class="profile-card">
+            <div class="profile-field">
+                <span class="field-label">Name</span>
+                <span class="field-value">Lee Heeseung</span>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Birth</span>
+                <span class="field-value hidden-value">[HIDDEN]</span>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">MBTI</span>
+                <span class="field-value hidden-value">[HIDDEN]</span>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Likes</span>
+                <span class="field-value hidden-value">[HIDDEN]</span>
+            </div>
+            <div class="profile-field">
+                <span class="field-label">Dislikes</span>
+                <span class="field-value hidden-value">[HIDDEN]</span>
+            </div>
+
+            <div class="quote">
+                「填这些有什么用呢。」<br>
+                「别人看到的是数字和字母。」<br>
+                「又不是我。」<br>
+                —— 羲承
+            </div>
+        </div>
+
+        <div class="edit-section">
+            <h4>📝 你觉得羲承是什么样的人？</h4>
+            <textarea id="userImpression" class="edit-input" rows="3" placeholder="写在这里..."></textarea>
+            <button class="save-btn" id="saveImpression">保存</button>
+            <div id="responseNote" class="response-note"></div>
+        </div>
+    </div>
+
+    <script>
+        let savedImpression = '';
+
+        function loadSavedData() {
+            const saved = localStorage.getItem('hee_archive_user');
+            if (saved) {
+                const userData = JSON.parse(saved);
+                if (userData.profileAnswer) {
+                    savedImpression = userData.profileAnswer;
+                    document.getElementById('userImpression').value = savedImpression;
+                }
+                // 检查是否有批注回复
+                if (userData.profileResponse) {
+                    const note = document.getElementById('responseNote');
+                    note.innerHTML = `✏️ 羲承的批注: "${userData.profileResponse}"`;
+                    note.classList.add('show');
+                }
+            }
+        }
+
+        function saveImpression() {
+            const impression = document.getElementById('userImpression').value.trim();
+            if (!impression) return;
+
+            const saved = localStorage.getItem('hee_archive_user');
+            let userData = saved ? JSON.parse(saved) : {};
+            
+            userData.profileAnswer = impression;
+            
+            // 生成羲承的批注
+            const responses = {
+                default: '其实还好',
+                tired: '今天还好',
+                quiet: '分人',
+                kind: '谢谢',
+                cold: '是吗'
+            };
+            
+            let response = responses.default;
+            if (impression.includes('累') || impression.includes('疲惫')) response = responses.tired;
+            else if (impression.includes('安静') || impression.includes('不爱说话')) response = responses.quiet;
+            else if (impression.includes('温柔') || impression.includes('善良')) response = responses.kind;
+            else if (impression.includes('冷') || impression.includes('难接近')) response = responses.cold;
+            
+            userData.profileResponse = response;
+            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+            
+            const note = document.getElementById('responseNote');
+            note.innerHTML = `✏️ 羲承的批注: "${response}"`;
+            note.classList.add('show');
+            
+            // 记录对话
+            if (!userData.conversations) userData.conversations = [];
+            userData.conversations.push({ type: 'profile_edit', content: impression, time: Date.now() });
+            localStorage.setItem('hee_archive_user', JSON.stringify(userData));
+        }
+
+        document.getElementById('saveImpression').addEventListener('click', saveImpression);
+        loadSavedData();
+    </script>
+</body>
+</html>
