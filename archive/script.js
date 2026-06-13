@@ -1,5 +1,5 @@
 // ==========================================
-// HEE_ARCHIVE v11.0 - 三条故事线动态切换
+// HEE_ARCHIVE v11.1 - 三条故事线动态切换（完整修复版）
 // 根据玩家选择实时切换故事线
 // ==========================================
 
@@ -14,7 +14,7 @@ let currentUser = {
     familiarity: 0,
     day: 1,
     messagesToday: 0,
-    maxMessages: 5,
+    maxMessages: 6,
     dayGreetingSent: false,
     viewedPages: [],
     selectedOptions: [],
@@ -175,7 +175,6 @@ function getCurrentStory() {
     const listen = currentUser.tendency.listen || 0;
     const music = currentUser.tendency.music || 0;
     
-    // 显示当前倾向值（调试用）
     console.log(`倾向值: 夜晚=${night}, 倾听=${listen}, 音乐=${music}`);
     
     if (night >= listen && night >= music && night > 0) return 'night';
@@ -203,12 +202,12 @@ function getDayConversations(day) {
 
 // ========== 倾向值面板 ==========
 function createTendencyPanel() {
-    const panel = document.getElementById('tendencyPanel');
-    if (panel) panel.remove();
+    let panel = document.getElementById('tendencyPanel');
+    if (panel) return;
     
-    const newPanel = document.createElement('div');
-    newPanel.id = 'tendencyPanel';
-    newPanel.style.cssText = `
+    panel = document.createElement('div');
+    panel.id = 'tendencyPanel';
+    panel.style.cssText = `
         position: fixed;
         top: 80px;
         right: 20px;
@@ -222,7 +221,7 @@ function createTendencyPanel() {
         border: 1px solid #333;
         backdrop-filter: blur(4px);
     `;
-    newPanel.innerHTML = `
+    panel.innerHTML = `
         <div style="color:#ffd966; margin-bottom:8px; font-size:11px;">🎭 倾向值</div>
         <div style="margin-bottom:6px;">
             <span style="color:#88aaff;">🌙 月光</span>
@@ -244,7 +243,7 @@ function createTendencyPanel() {
         </div>
         <div id="storylineHint" style="margin-top:8px; font-size:9px; color:#888; text-align:center;"></div>
     `;
-    document.body.appendChild(newPanel);
+    document.body.appendChild(panel);
 }
 
 function updateTendencyPanel() {
@@ -288,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createTendencyPanel();
     updateTendencyPanel();
 
-    console.log('%c🦌 HEE v11.0 · 三条故事线动态切换', 'color: #ffd966; font-size: 14px');
+    console.log('%c🦌 HEE v11.1 · 三条故事线动态切换', 'color: #ffd966; font-size: 14px');
     console.log(`%c当前第 ${currentUser.day} 天`, 'color: #88aaff; font-size: 12px');
 
     setTimeout(() => {
@@ -395,6 +394,25 @@ function showEndingScreen(type, title, message, dialog) {
     document.getElementById('exitBtn')?.addEventListener('click', () => window.location.href = '../index.html');
 }
 
+function showGameEndedScreen() {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;background:#0a0a0a;font-family:monospace;text-align:center;">
+                <div style="font-size:64px;margin-bottom:20px;">🦌</div>
+                <div style="font-size:18px;color:#ffd966;margin-bottom:10px;">✦ 故事已完结 ✦</div>
+                <div style="font-size:12px;color:#888;margin-bottom:30px;">你找到了羲承留下的痕迹。</div>
+                <div style="display:flex;gap:15px;">
+                    <button id="restartBtn" style="padding:10px 24px;background:#ff66aa;color:white;border:none;border-radius:30px;cursor:pointer;">💜 重新认识一次吧？</button>
+                    <button id="exitBtn" style="padding:10px 24px;background:transparent;border:1px solid #ffd966;color:#ffd966;border-radius:30px;cursor:pointer;">返回桌面</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('restartBtn')?.addEventListener('click', () => restartGame());
+        document.getElementById('exitBtn')?.addEventListener('click', () => window.location.href = '../index.html');
+    }
+}
+
 function restartGame() {
     if (confirm('💜 重新认识一次羲承吗？\n\n所有进度都会被重置。')) {
         localStorage.removeItem('hee_archive_v11');
@@ -428,7 +446,7 @@ function resetUser() {
     currentUser = {
         visitCount: 1, firstVisit: new Date().toISOString(), lastLogin: new Date().toISOString(),
         unlockedPages: [], conversations: [], chatHistory: [], endings: [],
-        familiarity: 0, day: 1, messagesToday: 0, maxMessages: 5, dayGreetingSent: false,
+        familiarity: 0, day: 1, messagesToday: 0, maxMessages: 6, dayGreetingSent: false,
         viewedPages: [], selectedOptions: [],
         tendency: { night: 0, listen: 0, music: 0 },
         gameEnded: false, trueEndingUnlocked: false
@@ -470,8 +488,13 @@ function addToChatHistory(sender, content, isSystem = false) {
 
 function shutdownAndAdvance() {
     if (currentUser.day >= 7) {
-        const ending = determineEnding();
-        triggerEnding(ending);
+        if (currentUser.messagesToday >= currentUser.maxMessages || !canTalk()) {
+            const ending = determineEnding();
+            triggerEnding(ending);
+        } else {
+            showNotification('⚠️ 还有对话没有完成。继续和羲承说话吧。', 3000);
+            return false;
+        }
         return false;
     }
 
@@ -801,5 +824,5 @@ window.saveProfileAnswer = function(answer) {
     saveUserData();
 };
 
-console.log('%c🦌 HEE v11.0 已加载，三条故事线动态切换', 'color: #ffd966; font-size: 12px');
+console.log('%c🦌 HEE v11.1 已加载，三条故事线动态切换', 'color: #ffd966; font-size: 12px');
 console.log('%c选项前的图标表示所属故事线：🌙月光 📖读者 🎵共鸣', 'color: #888; font-size: 10px');
